@@ -32,7 +32,7 @@ jobs:
         run: twine check dist/*
 
       - name: Publish package to PyPI
-        run: twine upload
+        run: twine upload dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
