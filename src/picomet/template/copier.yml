@@ -1,0 +1,24 @@
+ASSR:
+  type: bool
+  help: Alpine.js SSR
+  default: no
+DB:
+  type: str
+  help: Choose database
+  choices:
+    - Sqlite
+    - Postgresql
+    - Mysql
+  default: Sqlite
+Tailwind:
+  type: bool
+  help: Use tailwind
+  default: no
+Ruff:
+  type: bool
+  help: Use ruff
+  default: yes
+VSCode:
+  type: bool
+  help: Configure VSCode
+  default: yes

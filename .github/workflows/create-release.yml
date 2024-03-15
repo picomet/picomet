@@ -1,0 +1,26 @@
+name: Create Release
+
+on:
+  push:
+    branches: main
+    tags:
+      - "v*.*.*"
+jobs:
+  github-release:
+    if: github.repository == 'picomet/picomet' && startsWith(github.ref, 'refs/tags')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Get latest tag
+        id: get-latest-tag
+        run: |
+          git fetch --tags --force
+          latest_tag=$(git tag -l --sort=-version:refname | head -n 1)
+          echo "latest-tag=$latest_tag" >> $GITHUB_OUTPUT
+      - uses: ncipollo/release-action@v1
+        with:
+          name: ${{ steps.get-latest-tag.outputs.latest-tag }}
+          tag: ${{ steps.get-latest-tag.outputs.latest-tag }}
+          token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,15 @@
+# nodejs
+node_modules
+
+# python
+env
+__pycache__
+
+# django
+.picomet
+.env
+db.sqlite3
+
+# other
+.DS_store
+*.tmp

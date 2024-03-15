@@ -1,0 +1,49 @@
+<Layout @="Base">
+  <Helmet group="head">
+    <title>New</title>
+  </Helmet>
+  <div class="container px-2 mx-auto my-2">
+    <div class="flex items-center justify-center">
+      <div class="w-11/12 md:max-w-md mx-auto">
+        <p class="text-center text-xl my-2">Write a new blog</p>
+        <form class="flex flex-col gap-1" x-form>
+          <label for="blogTitle" class="text-sm text-gray-600">Title</label>
+          <input
+            type="text"
+            class="input"
+            id="blogTitle"
+            name="title"
+            s-bind:value="form['title'].value() or ''"
+          />
+          <Fragment s-for="error" s-in="form['title'].errors">
+            <p class="text-sm text-red-400">{{ error }}</p>
+          </Fragment>
+          <label for="blogSlug" class="text-sm text-gray-600">Slug</label>
+          <input
+            type="text"
+            class="input"
+            id="blogSlug"
+            name="slug"
+            s-bind:value="form['slug'].value() or ''"
+          />
+          <Fragment s-for="error" s-in="form['slug'].errors">
+            <p class="text-sm text-red-400">{{ error }}</p>
+          </Fragment>
+          <label for="blogContent" class="text-sm text-gray-600">Content</label>
+          <textarea
+            class="input"
+            id="blogContent"
+            cols="30"
+            rows="10"
+            name="content"
+            s-text="form['content'].value() or ''"
+          ></textarea>
+          <Fragment s-for="error" s-in="form['content'].errors">
+            <p class="text-sm text-red-400">{{ error }}</p>
+          </Fragment>
+          <button type="submit" class="btn-primary self-end">Post</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</Layout>

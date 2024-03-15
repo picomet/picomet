@@ -1,0 +1,17 @@
+{% if Ruff %}[tool.ruff]
+fix = true
+exclude = ["env", "node_modules"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "UP", "F", "I", "DJ"]
+fixable = ["I"]
+
+[tool.ruff.lint.isort]
+section-order = [
+  "future",
+  "standard-library",
+  "third-party",
+  "first-party",
+  "local-folder",
+]
+known-first-party = ["core"]{% endif %}

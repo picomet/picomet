@@ -1,0 +1,81 @@
+<Js @="components/Signup.js" />
+<div
+  x-show="v == 'signup'"
+  class="bg-black/50 overflow-auto absolute inset-0 z-10 flex items-center justify-center"
+>
+  <div
+    class="bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg py-4 text-left px-6"
+    x-show="v == 'signup'"
+    x-transition
+    @click.outside="v == 'signup' && removeDialog()"
+  >
+    <div class="flex">
+      <div
+        class="ms-auto text-black-300 p-1 rounded-md cursor-pointer hover:bg-gray-100 active:bg-gray-300"
+        @click="removeDialog()"
+      >
+        <svg
+          class="fill-current"
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 18 18"
+        >
+          <path
+            d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"
+          ></path>
+        </svg>
+      </div>
+    </div>
+    <p class="text-2xl text-center">Signup</p>
+    <form
+      x-data="{errors: {__all__: []}}"
+      @submit.prevent="submitSignup($el, $data)"
+      class="mt-2 flex flex-col items-end gap-3"
+    >
+      <input
+        type="text"
+        autocomplete="name"
+        class="input"
+        placeholder="full name"
+        name="full_name"
+        required
+      />
+      <input
+        type="text"
+        autocomplete="username"
+        class="input"
+        placeholder="username"
+        name="username"
+        required
+      />
+      <input
+        type="password"
+        autocomplete="new-password"
+        class="input"
+        placeholder="password"
+        name="password1"
+        required
+      />
+      <input
+        type="password"
+        autocomplete="new-password"
+        class="input"
+        placeholder="password confirmation"
+        name="password2"
+        required
+      />
+      <button type="submit" class="btn-primary">Signup</button>
+    </form>
+    <hr class="my-3" />
+    <div class="flex justify-center gap-1">
+      <p>Already have an account?</p>
+      <p
+        class="cursor-pointer text-blue-500 hover:text-blue-700"
+        @click="setDialog('login')"
+      >
+        Login
+      </p>
+    </div>
+  </div>
+</div>

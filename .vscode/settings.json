@@ -1,0 +1,16 @@
+{
+  "python.analysis.extraPaths": ["./example/apps/"],
+  "python.analysis.autoImportCompletions": true,
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "always"
+    }
+  },
+  "tailwindCSS.experimental.configFile": "example/comets/base.tailwind.js",
+  "prettier.configPath": "./.prettierrc.json",
+  "[html][css][scss][javascript][typescript][json][jsonc][yaml][toml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "esbonio.sphinx.confDir": "docs/source"
+}

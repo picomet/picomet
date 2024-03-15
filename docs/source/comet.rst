@@ -1,0 +1,484 @@
+Comet
+=====
+
+The ``picomet.backends.picomet.PicometTemplates`` class implements Picomet's template backend API for Django.
+
+Layout
+------
+
+A ``Layout`` is used by a page
+
+.. code-block:: html
+  :emphasize-lines: 10,11,12
+
+  <!-- comets/Base.html -->
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <Group name="head" />
+    </head>
+    <body>
+      <div s-group="page">
+        <Outlet />
+      </div>
+    </body>
+  </html>
+
+.. code-block:: text
+
+  <!-- apps/core/comets/pages/About.html -->
+  <Layout @="Base">
+    <Helmet group="head">
+      <title>About</title>
+    </Helmet>
+    <div>
+      This is the about page
+    </div>
+  </Layout>
+
+
+Variable
+--------
+
+To embed any data into a template, use the ``{$ $}`` syntax or ``s-text`` attribute.
+
+.. code-block:: html
+
+  <span>{$ request.method $}</span>
+  or
+  <span s-text="request.method"></span>
+
+Expression in ``s-text`` and ``{$ $}`` is evaluated using the python's built in ``eval`` function.
+
+
+DTL
+---
+
+If the comet syntax is not enough for you, Picomet provides ``Django Template Language``'s two features in comet template.
+
+Variable
+~~~~~~~~
+
+You can use ``DTL``'s double curly braces syntax if you want to use any filter.
+
+.. code-block:: django
+
+  <div>
+    {{ request.method|lower }}
+  </div>
+
+Tag
+~~~
+
+You can use single ``DTL`` tags inside comet templates.
+
+.. code-block:: django
+
+  <div>
+    {% url 'core:index' %}
+  </div>
+
+
+.. warning::
+  Comet template doesn't support multi tags like ``{% comment %}{% endcomment %}``
+
+
+Navigation
+----------
+
+For navigation Picomet provides a custom Alpine.js directive named ``x-link``
+
+.. code-block:: html
+
+  <div>
+    <a href="/about" x-link>About</a>
+  </div>
+
+When navigating from a page to another page, picomet partially renders ``s-group="page"`` elements in that template on the server and returns a json of those partials.
+
+
+.. _targets:
+
+Targets
+-------
+
+``Targets`` is a list of strings, sent as a request header which picomet uses to partially render a page.
+
+.. _s-group:
+
+s-group
+~~~~~~~
+
+Picomet uses the ``s-group`` attribute to partially render parts of a page on the server.
+
+See how to use ``s-group`` in the :doc:`/action` guide.
+
+s-param
+~~~~~~~
+
+When you navigate from ``/&bookmarksPage=1`` to ``/&bookmarksPage=2``, Picomet partially renders ``s-param="bookmarksPage"`` elements in that page.
+
+
+Helmet
+------
+
+Put title and meta tags inside the head
+
+.. code-block:: html
+  :emphasize-lines: 5
+
+  <!-- comets/Base.html -->
+  ...
+    <head>
+      ...
+      <Group name="meta" />
+      ...
+    </head>
+  ...
+
+.. code-block:: text
+
+  <!-- apps/core/comets/Home.html -->
+  <Layout @="Base">
+    <Helmet group="meta">
+      <title>Home</title>
+      <meta name="title" content="..." />
+      <meta name="description" content="..." />
+    </Helmet>
+  </Layout>
+
+.. warning::
+  Tags supported inside the ``Helmet`` tag are ``title`` and ``meta``.
+
+
+Assets
+------
+
+Css
+~~~
+
+.. code-block:: css
+
+  /* apps/core/comets/Page.css or apps/core/assets/Page.css */
+  div a {
+    color: red;
+  }
+
+.. code-block:: text
+  :emphasize-lines: 2
+
+  <!-- apps/core/comets/Page.html -->
+  <Css @="Page.css" group="styles" />
+  <div>
+   <a>Link</a>
+  </div>
+
+Sass
+~~~~
+
+.. code-block:: scss
+
+  // apps/core/comets/Page.scss or apps/core/assets/Page.scss
+  div {
+    a {
+      color: red;
+    }
+  }
+
+.. code-block:: text
+  :emphasize-lines: 2
+
+  <!-- apps/core/comets/Page.html -->
+  <Sass @="Page.scss" group="styles" />
+  <div>
+   <a>Link</a>
+  </div>
+
+.. important::
+  ``Sass`` requires `sass <https://npmjs.com/package/sass>`_  and `javascript <https://pypi.org/project/javascript/>`_. You will need to do ``npm i sass`` and ``pip install javascript``
+
+Js
+~~~
+
+.. code-block:: javascript
+
+  /* apps/core/comets/Page.js or apps/core/assets/Page.js */
+  export sayHello(){
+    alert("hello");
+  }
+
+.. code-block:: text
+  :emphasize-lines: 2
+
+  <!-- apps/core/comets/Page.html -->
+  <Js @="Page.js" />
+  <div>
+   <button @click="sayHello()">say hello</button>
+  </div>
+
+s-asset:
+~~~~~~~~
+
+Import any asset from ``app/assets`` or :ref:`ASSETFILES_DIRS <assetfiles_dirs>`
+
+.. code-block:: html
+
+  <img s-asset:src="images/icon.png" />
+
+
+Attribute
+---------
+
+s-bind:
+~~~~~~~
+
+.. code-block:: html
+
+  <a s-bind:href="blog.slug">{$ blog.title $}</a>
+
+s-toggle:
+~~~~~~~~~
+
+Toggle boolean attribute
+
+.. code-block:: html
+
+  <button s-toggle:disabled="not user.is_authenticated"></button>
+
+s-static:
+~~~~~~~~~
+
+Import any static file from ``app/static`` or ``STATICFILES_DIRS``
+
+.. code-block:: html
+
+  <link rel="stylesheet" s-static:href="styles/main.css" />
+
+
+Component
+---------
+
+Defining a component
+
+.. code-block:: text
+
+  <!-- apps/core/comets/Counter.html -->
+  <div x-data={count: 0}>
+    <button @click="count++">+</button>
+    <span x-text="count"></span>
+    <button @click="count--">-</button>
+  </div>
+
+Using a component
+
+.. code-block:: text
+
+  <Include @="Counter" />
+  or
+  <Import.Counter @="Counter" />
+  <Counter />
+
+
+Children
+--------
+
+Defining a component with children
+
+.. code-block:: html
+
+  <!-- apps/core/comets/Card.html -->
+  <div class="card">
+    <Children />
+  </div>
+
+Using a component with children
+
+.. code-block:: text
+
+  <Include @="Card">
+    card body
+  </Include>
+  or
+  <Import.Card @="Card" />
+  <Card>
+    card body
+  </Card>
+
+
+Default
+-------
+
+Setting default props in a component
+
+.. code-block:: html
+
+  <!-- apps/core/comets/ProductItem.html -->
+  <Default show_add="True">
+    <div s-if="show_add">
+      add to cart
+    </div>
+  </Default>
+
+Using this component
+
+.. code-block:: text
+
+  <Include @="ProductItem" /> <!-- show_add is True -->
+  or
+  <Include @="ProductItem" .show_add="False" /> <!-- show_add is False -->
+
+.. note:: text
+
+
+Condition
+---------
+
+.. code-block:: html
+
+  <div s-if="user.is_superuser">
+    hi admin
+  </div>
+  <div s-elif="user.is_authenticated">
+    hi user
+  </div>
+  <div s-else>
+    please login
+  </div>
+
+.. code-block:: html
+
+  <div s-show="user.is_superuser" s-group="auth">
+    hi admin
+  </div>
+
+.. warning:: Use ``s-show`` instead of ``s-if`` with ``s-group``. Learn more about ``s-group`` the :doc:`/action` guide.
+
+
+Loop
+----
+
+.. code-block:: html
+
+  <div s-for="blog" s-in="blogs">
+    {$ blog.title $}
+  </div>
+  <div s-empty>
+    No blogs found
+  </div>
+
+
+With
+----
+
+Pass a variable to a part of template using the ``With`` tag
+
+.. code-block:: html
+
+  <With username="user.username">
+    {$ username $}
+  </With>
+
+
+Debug
+-----
+
+Contents inside the ``Debug`` tag will only be parsed when ``Debug=True`` in ``settings``.
+
+.. code-block:: text
+
+  <Debug>
+    <Js @="picomet/hmr.js" />
+  </Debug>
+
+
+Tailwind
+--------
+
+.. code-block:: text
+  :emphasize-lines: 6
+
+  <!-- comets/Base.html -->
+  <!doctype html>
+  <html lang="en">
+    <head>
+      ...
+      <Tailwind @="base" />
+      ...
+    </head>
+    <body>
+      ...
+    </body>
+  </html>
+
+.. warning::
+  The ``Tailwind`` tag must be inside the head tag.
+
+.. important::
+  ``Tailwind`` requires `tailwindcss <https://npmjs.com/package/tailwindcss>`_. You will need to do ``npm i tailwindcss``.
+
+For tailwind to work, picomet requires 3 files.
+
+.. code-block:: css
+
+  /* comets/base.tailwind.css */
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+
+.. code-block:: javascript
+
+  /** comets/base.tailwind.js */
+  /** @type {import('tailwindcss').Config} */
+  module.exports = {
+    theme: {},
+    plugins: [],
+  };
+
+.. code-block:: javascript
+
+  /** comets/base.postcss.js */
+  const tailwindcss = require("tailwindcss");
+
+  module.exports = {
+    plugins: [tailwindcss],
+  };
+
+
+Alpine SSR
+----------
+
+The cool thing about picomet is it's ability to render alpine.js on the server
+
+.. note::
+  Alpine.js directives supported on the server are ``x-data``, ``x-show``, ``x-text``, ``x-bind``. Learn more about these on `alpinejs.dev <https://alpinejs.dev>`_
+
+.. important::
+  To render Alpine.js syntax on the server Picomet requires `py-mini-racer <https://pypi.org/project/py-mini-racer>`_. You will need to do ``pip install py-mini-racer``
+
+s-prop
+~~~~~~
+
+To pass any data from the server context dictionary to the javascript context, use the s-prop directive.
+
+.. code-block:: python
+
+  # apps/core/views.py
+  from picomet.decorators import template
+  from picomet.views import render
+
+  @template("Page")
+  def page(request):
+      context = {"variable": "hello world"}
+      return render(request, context)
+
+.. code-block:: html
+
+  <!-- apps/core/comets/Page.html -->
+  <div s-prop:_var="variable" x-data="{var: _var}" server>
+    <span x-text="var"></span>
+  </div>
+
+.. important::
+  The ``server`` attribute is required to know if the alpine directives inside a block should be rendered on the server. The ``client`` attribute can be used inside a ``server`` block to exclude a block from being rendered on the server.

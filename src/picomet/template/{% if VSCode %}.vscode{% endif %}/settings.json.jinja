@@ -1,0 +1,14 @@
+{
+  "python.analysis.extraPaths": ["./apps/"],
+  "python.analysis.autoImportCompletions": true,
+  "[python]": { {% if Ruff %}
+    "editor.defaultFormatter": "charliermarsh.ruff",{% endif %}
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "always"
+    }
+  },{% if Tailwind %}
+  "tailwindCSS.experimental.configFile": "example/comets/base.tailwind.js",{% endif %}
+  "[html][css][scss][javascript][json][jsonc][yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}

@@ -1,0 +1,95 @@
+<Import.X @="components/A" />
+
+<nav
+  s-prop:_path="request.path"
+  x-data="{path: _path}"
+  x-init="navigation.addEventListener('navigate', () => {
+    setTimeout(() => {
+      $data.path = location.pathname;
+    }, 0);
+  });"
+  class="bg-gray-100 text-gray-600 body-font"
+>
+  <div
+    class="container px-2 mx-auto flex flex-wrap py-5 flex-col md:flex-row items-center"
+  >
+    <X
+      href="/"
+      class="hover:text-blue-600 mb-4 md:mb-0"
+      x-bind:class="{'text-blue-500': path == '/'}"
+    >
+      <span>Home</span>
+    </X>
+    <div
+      class="md:ml-auto flex flex-wrap items-center text-base justify-center gap-4"
+    >
+      <X
+        href="/new"
+        class="hover:text-blue-600"
+        x-bind:class="{'text-blue-500': path == '/new'}"
+      >
+        New
+      </X>
+      <X
+        href="/bookmarks"
+        class="hover:text-blue-600"
+        x-bind:class="{'text-blue-500': path == '/bookmarks'}"
+      >
+        Bookmarks
+      </X>
+      <div
+        x-data="{show:false}"
+        @click.outside="show=false"
+        client
+        class="relative"
+      >
+        <span class="hover:text-gray-900 cursor-pointer" @click="show=!show">
+          Account
+        </span>
+        <div
+          s-group="auth"
+          x-show="show"
+          x-cloak
+          class="absolute z-20 top-auto right-0 border rounded-md py-2 bg-white flex flex-col"
+        >
+          <Fragment s-if="user.is_authenticated">
+            <X
+              href="/profile"
+              class="py-2 px-6 hover:bg-gray-200 active:bg-gray-300"
+              @click="show=false;"
+            >
+              Profile
+            </X>
+            <X
+              href="/settings"
+              class="py-2 px-6 hover:bg-gray-200 active:bg-gray-300"
+              @click="show=false;"
+            >
+              Settings
+            </X>
+            <button
+              class="py-2 px-6 hover:bg-gray-200 active:bg-gray-300"
+              @click="call('core.logout', {});show=false;"
+            >
+              Logout
+            </button>
+          </Fragment>
+          <Fragment s-else>
+            <button
+              class="py-2 px-6 hover:bg-gray-200 active:bg-gray-300"
+              @click="setDialog('login');show=false;"
+            >
+              Login
+            </button>
+            <button
+              class="py-2 px-6 hover:bg-gray-200 active:bg-gray-300"
+              @click="setDialog('signup');show=false;"
+            >
+              Signup
+            </button>
+          </Fragment>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>

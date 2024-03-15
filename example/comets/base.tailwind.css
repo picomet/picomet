@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn-primary {
+    @apply py-2 px-4 bg-teal-500 text-white rounded-md hover:bg-teal-600 focus:bg-teal-700;
+  }
+  .input {
+    @apply bg-white focus:outline-none focus:border-blue-300 border border-gray-300 rounded-lg py-2 px-4 block w-full appearance-none leading-normal;
+  }
+}
+
+[x-cloak] {
+  display: none !important;
+}

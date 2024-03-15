@@ -1,0 +1,42 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Sphinx-autobuild",
+      "type": "shell",
+      "command": "sphinx-autobuild",
+      "args": [
+        "docs/source",
+        "docs/build",
+        "docs/source/*.rst",
+        "--port",
+        "8080"
+      ],
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": {
+        "fileLocation": ["absolute"],
+        "pattern": [
+          {
+            "regexp": "^(.*?):(\\d+): (\\w+): (.*?)$",
+            "file": 1,
+            "line": 2,
+            "severity": 3,
+            "message": 4
+          }
+        ],
+        "background": {
+          "activeOnStart": false,
+          "beginsPattern": "Running Sphinx",
+          "endsPattern": "build succeeded."
+        }
+      }
+    }
+  ]
+}

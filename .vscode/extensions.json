@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "almahdi.code-django",
+    "charliermarsh.ruff",
+    "editorconfig.editorconfig",
+    "esbenp.prettier-vscode",
+    "trond-snekvik.simple-rst"
+  ]
+}

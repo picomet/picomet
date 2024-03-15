@@ -1,0 +1,48 @@
+[project]
+name = "picomet"
+version = "0.0.1"
+authors = [{ name = "Al Mahdi", email = "picometproject@gmail.com" }]
+license.file = "LICENSE"
+description = "The nextjs of django"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+classifiers = [
+  "Environment :: Web Environment",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.12",
+  "Operating System :: OS Independent",
+  "License :: OSI Approved :: MIT License",
+]
+keywords = ["picomet", "django", "nextjs"]
+
+[project.urls]
+Documentation = "https://picomet.readthedocs.io"
+Repository = "https://github.com/picomet/picomet"
+Funding = "https://buymeacoffee.com/almahdi404"
+
+[project.scripts]
+picomet = "picomet.cli:main"
+
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+fix = true
+exclude = ["env", "node_modules", ".picomet"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "UP", "F", "I", "DJ"]
+fixable = ["I"]
+
+[tool.ruff.lint.isort]
+section-order = [
+  "future",
+  "standard-library",
+  "third-party",
+  "first-party",
+  "local-folder",
+]
+known-first-party = ["core"]

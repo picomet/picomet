@@ -1,0 +1,5 @@
+-r example/requirements/dev.txt
+pre-commit==3.6.2
+ruff==0.3.2
+-r docs/requirements.txt
+sphinx-autobuild==2024.2.4

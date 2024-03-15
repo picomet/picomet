@@ -1,0 +1,21 @@
+# nodejs
+node_modules
+
+# python
+env
+__pycache__
+*.egg-info
+
+# django
+.picomet
+.env
+db.sqlite3
+*.mo
+
+# other
+build
+dist
+.DS_store
+*.tmp
+
+!src/picomet/template/.env

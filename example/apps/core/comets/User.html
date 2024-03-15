@@ -1,0 +1,27 @@
+<Layout @="Base">
+  <Helmet group="head">
+    <title>{$ u.full_name $}</title>
+  </Helmet>
+  <div class="container px-2 mx-auto my-2">
+    <div class="mx-auto my-3 flex flex-col items-center gap-2">
+      <h1 class="text-2xl">{{ u.full_name }}</h1>
+      <span class="text-gray-500">
+        Joined at {{ u.date_joined|date:'j M Y' }}
+      </span>
+      <div class="flex items-center gap-1">
+        <span>{{ u.blog_set.count }} blogs</span>
+        .
+        <span>{{ u.comment_set.count }} comments</span>
+      </div>
+    </div>
+    <hr />
+    <div
+      s-for="blog"
+      s-in="u.blog_set.all().prefetch_related('like_set','comment_set')"
+      s-of="u.blog_set.filter(id=key).prefetch_related('like_set','comment_set')"
+      s-key="blog.id"
+    >
+      <Include @="components/Blog" s-k />
+    </div>
+  </div>
+</Layout>
