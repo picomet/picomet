@@ -20,9 +20,9 @@ Go to https://picomet.readthedocs.io for getting started
 -   🌲 Alpine.js support
 -   🖌️ Tailwind support
 
-## Contribution Guidelines
+## Contribution Guideline
 
-We welcome contributions from the community to enhance and improve the framework. If you'd like to contribute, please follow our contribution guidelines.
+We welcome contributions from the community to enhance and improve the framework. If you'd like to contribute, please read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
