@@ -12,5 +12,6 @@
   "[html][css][scss][javascript][typescript][json][jsonc][yaml][toml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "esbonio.sphinx.confDir": "docs/source"
+  "esbonio.sphinx.confDir": "${workspaceFolder}/docs/source",
+  "esbonio.sphinx.buildDir": "${workspaceFolder}/docs/esbonio"
 }
