@@ -26,7 +26,7 @@ We welcome contributions from the community to enhance and improve the framework
 
 ## License
 
-Pocomet licensed under the MIT License. Feel free to use it in your projects and make it even better!
+Picomet is licensed under the **MIT License**. Feel free to use it in your projects and make it even better!
 
 ## Support
 
