@@ -271,7 +271,7 @@ Defining a component
     <button @click="count--">-</button>
   </div>
 
-Using a component
+Using the component
 
 .. code-block:: text
 
@@ -282,7 +282,7 @@ Using a component
 
 
 Children
---------
+~~~~~~~~
 
 Defining a component with children
 
@@ -293,7 +293,7 @@ Defining a component with children
     <Children />
   </div>
 
-Using a component with children
+Using the component
 
 .. code-block:: text
 
@@ -308,9 +308,9 @@ Using a component with children
 
 
 Default
--------
+~~~~~~~
 
-Setting default props in a component
+Setting default context props in a component
 
 .. code-block:: html
 
@@ -321,7 +321,7 @@ Setting default props in a component
     </div>
   </Default>
 
-Using this component
+Using the component
 
 .. code-block:: text
 
@@ -329,7 +329,22 @@ Using this component
   or
   <Include @="ProductItem" .show_add="False" /> <!-- show_add is False -->
 
-.. note:: text
+.. note::
+  Use dot(.) prefix to provide a context variable to a component.
+
+s-props
+~~~~~~~
+
+Pass normal attributes to a component
+
+.. code-block:: html
+
+  <!-- apps/core/comets/Component.html -->
+  <button s-props>click</button>
+
+.. code-block:: text
+
+  <Include @="Component" class="text-red-500" />
 
 
 Condition
@@ -353,7 +368,7 @@ Condition
     hi admin
   </div>
 
-.. warning:: Use ``s-show`` instead of ``s-if`` with ``s-group``. Learn more about ``s-group`` the :doc:`/action` guide.
+.. warning:: Use ``s-show`` instead of ``s-if`` with ``s-group``. Learn more about ``s-group`` in the :doc:`/action` guide.
 
 
 Loop
@@ -362,7 +377,9 @@ Loop
 .. code-block:: html
 
   <div s-for="blog" s-in="blogs">
-    {$ blog.title $}
+    <div>
+      {$ blog.title $}
+    </div>
   </div>
   <div s-empty>
     No blogs found
@@ -372,7 +389,7 @@ Loop
 With
 ----
 
-Pass a variable to a part of template using the ``With`` tag
+Pass a variable to a part of template
 
 .. code-block:: html
 
