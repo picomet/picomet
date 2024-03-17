@@ -16,4 +16,6 @@ def render(
     content = template.render(context, request)
     if not isinstance(content, dict):
         return HttpResponse(content, content_type, status)
-    return JsonResponse(content, content_type, status)
+    return JsonResponse(
+        content, content_type, status, headers={"Vary": "Targets,Action"}
+    )
