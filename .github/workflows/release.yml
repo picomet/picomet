@@ -6,7 +6,7 @@ on:
       - "v*.*.*"
 jobs:
   pypi-publish:
-    name: Publish to PYPI
+    name: PYPI publish
     runs-on: ubuntu-latest
     environment:
       name: pro
@@ -30,28 +30,30 @@ jobs:
       - name: Test distributions
         run: twine check dist/*
 
-      - name: Publish package to PyPI
+      - name: Upload distributions
         run: twine upload dist/*
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
 
   github-release:
-    name: Create release
+    name: Github release
     runs-on: ubuntu-latest
     permissions:
       contents: write
     needs: [pypi-publish]
     if: github.repository == 'picomet/picomet'
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout source
+        uses: actions/checkout@v3
       - name: Get latest tag
         id: get-latest-tag
         run: |
           git fetch --tags --force
           latest_tag=$(git tag -l --sort=-version:refname | head -n 1)
           echo "latest-tag=$latest_tag" >> $GITHUB_OUTPUT
-      - uses: ncipollo/release-action@v1
+      - name: Create release
+        uses: ncipollo/release-action@v1
         with:
           name: ${{ steps.get-latest-tag.outputs.latest-tag }}
           tag: ${{ steps.get-latest-tag.outputs.latest-tag }}
