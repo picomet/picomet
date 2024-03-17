@@ -14,7 +14,7 @@ If using Tailwind
 
 .. code-block:: bash
 
-  npm i
+  npm ci
 
 
 Compile project
