@@ -2,12 +2,11 @@ name: Create Release
 
 on:
   push:
-    branches: main
     tags:
       - "v*.*.*"
 jobs:
   github-release:
-    if: github.repository == 'picomet/picomet' && startsWith(github.ref, 'refs/tags')
+    if: github.repository == 'picomet/picomet'
     runs-on: ubuntu-latest
     permissions:
       contents: write
