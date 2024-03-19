@@ -153,6 +153,48 @@ Put title and meta tags inside the head
   Tags supported inside the ``Helmet`` tag are ``title`` and ``meta``.
 
 
+Form
+----
+
+For submitting forms, Picomet provides a custom Alpine.js directive named ``x-form``
+
+.. code-block:: html
+
+  <!-- apps/core/comets/Login.html -->
+  <form x-form>
+    <input type="text" name="username" />
+    <input type="password" name="password" />
+    <button type="submit">Login</button>
+  </form>
+
+.. code-block:: python
+
+  # apps/core/views.py
+  from django.contrib.auth.forms import AuthenticationForm
+  from picomet.decorators import template
+
+  @template("Login")
+  def login(request: HttpRequest):
+    context = {}
+    form = AuthenticationForm(request.user)
+    if request.method == "POST":
+        form = AuthenticationForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get("username")
+            password = form.cleaned_data.get("password")
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+    context["form"] = form
+    return render(request, context)
+
+
+When the form is submitted, only the form element is partially rendered on the server.
+
+.. note::
+  ``x-form`` uses ``POST`` for submitting data.
+
+
 Assets
 ------
 
