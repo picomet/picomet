@@ -147,16 +147,30 @@ document.addEventListener("alpine:init", () => {
       event.preventDefault();
       const body = new FormData(el);
       const url = new URL(window.location);
-      fetch(url, {
-        method: "post",
-        body: body,
-        headers: {
-          Targets: JSON.stringify([getFullXPath(el)]),
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-      }).then((response) => {
-        handleResponse(response);
-      });
+      const method = el.getAttribute("method");
+      if (method && method.toLowerCase() == "post") {
+        fetch(url, {
+          method: method,
+          body: body,
+          headers: {
+            Targets: JSON.stringify([getFullXPath(el)]),
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+        }).then((response) => {
+          handleResponse(response);
+        });
+      } else if (!method || method.toLowerCase() == "get") {
+        const actionUrl = new URL(el.action);
+        const formData = new FormData(el);
+        for (const [key, value] of formData.entries()) {
+          actionUrl.searchParams.append(key, value);
+        }
+        update([getFullXPath(el)], actionUrl).then((data) => {
+          if (!data.redirect) {
+            history.pushState({}, "", actionUrl);
+          }
+        });
+      }
     }
     el.addEventListener("submit", handleSubmit);
     cleanup(() => {

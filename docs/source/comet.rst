@@ -158,10 +158,12 @@ Form
 
 For submitting forms, Picomet provides a custom Alpine.js directive named ``x-form``
 
+When the form is submitted, only the form element is partially rendered on the server.
+
 .. code-block:: html
 
   <!-- apps/core/comets/Login.html -->
-  <form x-form>
+  <form method="post" x-form>
     <input type="text" name="username" />
     <input type="password" name="password" />
     <button type="submit">Login</button>
@@ -170,7 +172,9 @@ For submitting forms, Picomet provides a custom Alpine.js directive named ``x-fo
 .. code-block:: python
 
   # apps/core/views.py
+  from django.contrib.auth import authenticate, login
   from django.contrib.auth.forms import AuthenticationForm
+  from django.http import HttpRequest
   from picomet.decorators import template
 
   @template("Login")
@@ -187,12 +191,6 @@ For submitting forms, Picomet provides a custom Alpine.js directive named ``x-fo
                 login(request, user)
     context["form"] = form
     return render(request, context)
-
-
-When the form is submitted, only the form element is partially rendered on the server.
-
-.. note::
-  ``x-form`` uses ``POST`` for submitting data.
 
 
 Assets
