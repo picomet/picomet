@@ -64,3 +64,6 @@ Start the development server
 .. code-block:: shell
 
   python manage.py runserver
+
+
+Now go to http://localhost:8000 with your web browser to see it running.
