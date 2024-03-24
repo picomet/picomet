@@ -20,3 +20,4 @@ repos:
     rev: v8.56.0
     hooks:
       - id: eslint
+        args: [.]
