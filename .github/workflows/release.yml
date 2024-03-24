@@ -16,6 +16,17 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install esbuild
+        run: npm i esbuild
+
+      - name: Compile typescript
+        run: find src/picomet/assets/picomet -name "*.ts" | xargs -n 1 npx esbuild --target=es6 --outdir=src/picomet/assets/picomet
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:

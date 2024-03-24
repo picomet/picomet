@@ -245,8 +245,8 @@ Js
 .. code-block:: javascript
 
   /* apps/core/comets/Page.js or apps/core/assets/Page.js */
-  export sayHello(){
-    alert("hello");
+  export say(value){
+    alert(value);
   }
 
 .. code-block:: text
@@ -254,9 +254,27 @@ Js
 
   <!-- apps/core/comets/Page.html -->
   <Js @="Page.js" />
-  <div>
-   <button @click="sayHello()">say hello</button>
-  </div>
+  <button @click="say('hello')">say hello</button>
+
+Ts
+~~~
+
+.. code-block:: typescript
+
+  // apps/core/comets/Page.ts or apps/core/assets/Page.ts
+  export say(value: string){
+    alert(value);
+  }
+
+.. code-block:: text
+  :emphasize-lines: 2
+
+  <!-- apps/core/comets/Page.html -->
+  <Ts @="Page.ts" />
+  <button @click="say('hello')">say hello</button>
+
+.. important::
+  ``Ts`` requires `esbuild <https://npmjs.com/package/esbuild>`_  and `javascript <https://pypi.org/project/javascript/>`_. You will need to do ``npm i esbuild`` and ``pip install javascript``
 
 s-asset:
 ~~~~~~~~
@@ -473,7 +491,7 @@ Tailwind
   The ``Tailwind`` tag must be inside the head tag.
 
 .. important::
-  ``Tailwind`` requires `tailwindcss <https://npmjs.com/package/tailwindcss>`_. You will need to do ``npm i tailwindcss``.
+  ``Tailwind`` requires `tailwindcss <https://npmjs.com/package/tailwindcss>`_ and `javascript <https://pypi.org/project/javascript/>`_. You will need to do ``npm i tailwindcss`` and ``pip install javascript``
 
 For tailwind to work, picomet requires 3 files.
 

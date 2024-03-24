@@ -23,7 +23,6 @@ from picomet.parser import (
     CometParser,
     asset_cache,
     compile_asset,
-    compile_sass,
     compile_tailwind,
     dgraph,
     twlayouts,
@@ -91,11 +90,12 @@ def setup():
 
             def validate_cache():
                 for file in fhash:
-                    with open(file) as f:
-                        content = f.read()
-                        if mdhash(content, 8) != fhash[file]:
-                            cache_file(file, content)
-                            compile_file(file)
+                    if Path(file).exists():
+                        with open(file) as f:
+                            content = f.read()
+                            if mdhash(content, 8) != fhash[file]:
+                                cache_file(file, content)
+                                compile_file(file)
 
             thread = threading.Thread(target=validate_cache, daemon=True)
             thread.start()
@@ -233,7 +233,7 @@ def compile_file(path: str):
             traverse(path)
 
         hmr_send_message({"layout" if parser.is_layout else "template": path})
-    elif ext == ".js" and len(dgraph.get(path, [])):
+    elif (ext == ".js" or ext == ".ts") and len(dgraph.get(path, [])):
         compile_asset(path)
         hmr_send_message(
             {
@@ -241,16 +241,8 @@ def compile_file(path: str):
                 "script": asset_cache[path][0],
             }
         )
-    elif ext == ".css" and len(dgraph.get(path, [])):
+    elif (ext == ".css" or ext == ".scss") and len(dgraph.get(path, [])):
         compile_asset(path)
-        hmr_send_message(
-            {
-                "assetUrl": ASSET_URL,
-                "style": asset_cache[path][0],
-            }
-        )
-    elif ext == ".scss" and len(dgraph.get(path, [])):
-        compile_sass(path)
         hmr_send_message(
             {
                 "assetUrl": ASSET_URL,
@@ -275,7 +267,7 @@ def compile_file(path: str):
         hmr_send_message(
             {
                 "assetUrl": ASSET_URL,
-                "asset": asset_cache[path][0],
+                "link": asset_cache[path][0],
             }
         )
 

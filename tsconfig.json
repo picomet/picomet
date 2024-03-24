@@ -1,0 +1,11 @@
+{
+  "include": ["src/**/*.ts"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "comet": ["./src/picomet/assets/picomet/comet"]
+    },
+    "lib": ["DOM", "ES2018"],
+    "noEmit": true
+  }
+}

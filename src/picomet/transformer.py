@@ -292,7 +292,7 @@ class Transformer:
                 self.contents[self.c_target]["css"][fname.split(".")[0]] = (
                     f"/{ASSET_URL}{fname}"
                 )
-            elif tag == "Js":
+            elif tag == "Js" or tag == "Ts":
                 fname, _ = asset_cache[get_attr(node, "@")]
                 self.contents[self.c_target]["js"][fname.split(".")[0]] = (
                     f"/{ASSET_URL}{fname}"
@@ -348,7 +348,7 @@ class Transformer:
                         "childrens": [compiled],
                     }
                 )
-        elif tag == "Js":
+        elif tag == "Js" or tag == "Ts":
             fname, _ = asset_cache[get_attr(node, "@")]
             asset_id = fname.split(".")[0]
             remove_attr(attrs, "@")

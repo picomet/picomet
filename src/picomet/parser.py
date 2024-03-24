@@ -481,17 +481,14 @@ class CometParser(BaseHTMLParser):
                     "parent": self.current,
                 }
             )
-        elif tag == "Js" or tag == "Css" or tag == "Sass":
+        elif tag == "Js" or tag == "Ts" or tag == "Css" or tag == "Sass":
             asset_name = get_attr(attrs, "@")
             if isinstance(asset_name, str):
                 asset = find_in_comets(asset_name) or find_in_assets(asset_name)
                 if asset:
                     self.add_dep(asset, self.id)
                     if not asset_cache.get(asset):
-                        if tag == "Sass":
-                            compile_sass(asset)
-                        else:
-                            compile_asset(asset)
+                        compile_asset(asset)
                     set_attr(attrs, "@", asset)
                     self.current["childrens"].append(
                         {
@@ -717,14 +714,57 @@ class CometParser(BaseHTMLParser):
                 )
 
 
+sass_load_paths = [
+    os.path.join(BASE_DIR, "assets"),
+    *[os.path.join(app.path, "assets") for app in apps.get_app_configs()],
+]
+
+
 def compile_asset(path: str):
     from picomet.loaders import cache_file, fcache
 
-    with open(path) as f:
-        cache_file(path, f.read())
+    if not fcache.get(path):
+        with open(path) as f:
+            cache_file(path, f.read())
 
-    compiled = fcache[path]
     name, ext = os.path.splitext(os.path.basename(path))
+    if ext == ".ts":
+        from javascript import require
+
+        compiled: str = (
+            require("esbuild")
+            .buildSync(
+                {
+                    "target": "es6",
+                    "stdin": {
+                        "contents": fcache[path],
+                        "loader": "ts",
+                    },
+                    "write": False,
+                    "minify": BUILD,
+                }
+            )
+            .outputFiles[0]
+            .text
+        )
+        ext = ".js"
+    elif ext == ".scss":
+        from javascript import require
+
+        compiled: str = (
+            require("sass")
+            .compileString(
+                fcache[path],
+                {
+                    "loadPaths": sass_load_paths,
+                    "style": "compressed" if BUILD else "expanded",
+                },
+            )
+            .css
+        )
+        ext = ".css"
+    else:
+        compiled = fcache[path]
     id = f"{name}-{mdhash(path,6)}"
     fname = f"{id}.{mdhash(compiled,6)}{ext}"
     asset_cache[path] = (fname, compiled)
@@ -736,42 +776,6 @@ def compile_asset(path: str):
     save_asset_cache()
 
     return id
-
-
-sass_load_paths = [
-    os.path.join(BASE_DIR, "assets"),
-    *[os.path.join(app.path, "assets") for app in apps.get_app_configs()],
-]
-
-
-def compile_sass(path: str):
-    from picomet.loaders import cache_file, fcache
-
-    with open(path) as f:
-        cache_file(path, f.read())
-
-    from javascript import require
-
-    compiled: str = (
-        require("sass")
-        .compileString(
-            fcache[path],
-            {
-                "loadPaths": sass_load_paths,
-                "style": "compressed" if BUILD else "expanded",
-            },
-        )
-        .css
-    )
-    id = f"{os.path.splitext(os.path.basename(path))[0]}-{mdhash(path,6)}"
-    fname = f"{id}.{mdhash(compiled,6)}.css"
-    asset_cache[path] = (fname, compiled)
-    for f in glob(str(assets_dir / f"{id}.*.css")):
-        if os.path.exists(f):
-            os.remove(f)
-    with open(assets_dir / fname, "w") as f:
-        f.write(compiled)
-    save_asset_cache()
 
 
 def compile_tailwind(layout: str):

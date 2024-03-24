@@ -1,0 +1,12 @@
+{
+  "include": ["**/*.ts", "globals.d.ts", "../src/picomet/assets/picomet/comet"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "main": ["./apps/core/assets/main"],
+      "comet": ["../src/picomet/assets/picomet/comet"]
+    },
+    "lib": ["DOM", "ES2018"],
+    "noEmit": true
+  }
+}
