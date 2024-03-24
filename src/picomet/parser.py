@@ -201,7 +201,7 @@ if RUNSERVER:
     except FileNotFoundError:
         pass
 
-twlayouts = {}
+twlayouts: dict[str, str] = {}
 if RUNSERVER:
     try:
         with (cache_dir / "twlayouts.json").open() as f:
