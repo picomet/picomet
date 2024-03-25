@@ -5,7 +5,9 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("startproject")
+    parser.add_argument(
+        "startproject", help="Generate project in the current folder using copier."
+    )
 
     args = parser.parse_args()
     if args.startproject:
