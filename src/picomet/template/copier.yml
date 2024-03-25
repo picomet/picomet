@@ -18,6 +18,10 @@ Ruff:
   type: bool
   help: Use ruff
   default: yes
+Precommit:
+  type: bool
+  help: Use pre-commit
+  default: yes
 VSCode:
   type: bool
   help: Configure VSCode

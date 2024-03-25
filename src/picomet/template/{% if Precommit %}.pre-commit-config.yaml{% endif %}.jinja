@@ -1,0 +1,20 @@
+repos:{% if Ruff %}
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.4
+    hooks:
+      - id: ruff
+      - id: ruff-format{% endif %}
+  - repo: local
+    hooks:
+      - id: check-absent-migrations
+        name: Check absent migrations
+        entry: python manage.py makemigrations --check
+        pass_filenames: false
+        language: system
+        always_run: true
+      - id: check-unapplied-migrations
+        name: Check unapplied migrations
+        entry: python manage.py migrate --check
+        pass_filenames: false
+        language: system
+        always_run: true
