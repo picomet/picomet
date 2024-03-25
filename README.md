@@ -3,7 +3,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/picomet)
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/picomet)
 ![GitHub](https://img.shields.io/github/license/picomet/picomet)
-[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.gg/4byApQZg8X)
+[![Discord](https://img.shields.io/badge/Discord-5865f2.svg?logo=discord&logoColor=white)](https://discord.gg/4byApQZg8X)
 
 ## Introduction
 
