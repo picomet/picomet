@@ -17,6 +17,10 @@ Picomet
    :alt: Discord Invite
    :target: https://discord.gg/4byApQZg8X
 
+.. image:: https://img.shields.io/badge/Sponsor-30363D?logo=buymeacoffee&logoColor=#white
+   :alt: BMAC Sponsor
+   :target: https://buymeacoffee.com/almahdi404
+
 Picomet allows you to build Single Page Applications (SPAs) with Server-Side Rendering (SSR) capabilities, seamlessly integrated with Django. What sets this framework apart is its ability to render Alpine.js syntax on the server and to update specific parts of a page by partially rending them on the server.
 
 Topics
