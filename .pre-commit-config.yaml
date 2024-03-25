@@ -21,15 +21,18 @@ repos:
     hooks:
       - id: eslint
         args: [.]
+        types_or: [ts, javascript, json]
   - repo: local
     hooks:
       - id: tsc-picomet
         name: tsc picomet
         entry: npx tsc -p tsconfig.json
+        types_or: [ts, javascript, json]
         language: system
         pass_filenames: false
       - id: tsc-example
         name: tsc example
         entry: npx tsc -p example/tsconfig.json
+        types_or: [ts, javascript, json]
         language: system
         pass_filenames: false
