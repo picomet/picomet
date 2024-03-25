@@ -5,6 +5,8 @@
 ![GitHub](https://img.shields.io/github/license/picomet/picomet)
 [![Discord](https://img.shields.io/badge/Discord-5865f2.svg?logo=discord&logoColor=white)](https://discord.gg/4byApQZg8X)
 
+> **Tip**: Picomet isn't stable at this moment. Stability is expected with the 1.0.0 release. Remember to run `pip install --upgrade picomet` from time to time, to get the latest features and bug fixes.
+
 ## Introduction
 
 Picomet allows you to build Single Page Applications (SPAs) with Server-Side Rendering (SSR) capabilities, seamlessly integrated with Django. What sets this framework apart is its ability to render Alpine.js syntax on the server and to update specific parts of a page by partially rending them on the server.

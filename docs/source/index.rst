@@ -21,6 +21,9 @@ Picomet
    :alt: BMAC Sponsor
    :target: https://buymeacoffee.com/almahdi404
 
+.. tip:: Picomet isn't stable at this moment. Stability is expected with the 1.0.0 release. Remember to run ``pip install --upgrade picomet`` from time to time, to get the latest features and bug fixes.
+
+
 Picomet allows you to build Single Page Applications (SPAs) with Server-Side Rendering (SSR) capabilities, seamlessly integrated with Django. What sets this framework apart is its ability to render Alpine.js syntax on the server and to update specific parts of a page by partially rending them on the server.
 
 Topics
