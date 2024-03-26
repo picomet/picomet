@@ -30,3 +30,6 @@ VSCode:
   type: bool
   help: Configure VSCode
   default: yes
+
+_jinja_extensions:
+  - picomet.copier.VarsExtension
