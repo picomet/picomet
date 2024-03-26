@@ -54,7 +54,7 @@ def setup():
                         self.time["modified"][src_path] = tm
                     if (
                         (event.event_type == "closed")
-                        and self.time.get("modified")
+                        and self.time["modified"].get(src_path)
                         and ((tm - self.time["modified"][src_path]) <= 1)
                         and is_file_changed(src_path)
                     ):
