@@ -317,7 +317,7 @@ async function handleResponse(response: Response, scrollToTop?: boolean) {
           }
         }
         for (const id in partial.js) {
-          if (!window[`${id}_cleanup`]) {
+          if (!document.querySelector(`[data-script-id="${id}"]`)) {
             import(partial.js[id])
               .then((module: object) => {
                 Object.keys(module).forEach((key) => {
