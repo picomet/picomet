@@ -12,7 +12,7 @@
   },
   "tailwindCSS.experimental.configFile": "example/comets/base.tailwind.js",
   "prettier.configPath": "./.prettierrc.json",
-  "[html][css][scss][javascript][typescript][json][jsonc][yaml][toml]": {
+  "[html][css][scss][javascript][typescript][json][jsonc][markdown][yaml][toml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "esbonio.sphinx.confDir": "${workspaceFolder}/docs/source",
