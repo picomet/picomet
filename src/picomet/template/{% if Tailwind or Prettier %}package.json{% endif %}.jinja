@@ -1,0 +1,8 @@
+{ {% if Prettier %}
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  }{% endif %}{% if Prettier and Tailwind %},{% endif %}{% if Tailwind %}
+  "dependencies": {
+    "tailwindcss": "^3.4.1"
+  }{% endif %}
+}

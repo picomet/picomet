@@ -2,7 +2,7 @@
   "recommendations": [
     "almahdi.code-django",{% if Ruff %}
     "charliermarsh.ruff",{% endif %}
-    "editorconfig.editorconfig",
-    "esbenp.prettier-vscode"
+    "editorconfig.editorconfig"{% if Prettier %},
+    "esbenp.prettier-vscode"{% endif %}
   ]
 }

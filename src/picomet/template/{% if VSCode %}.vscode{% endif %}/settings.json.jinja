@@ -6,9 +6,9 @@
     "editor.codeActionsOnSave": {
       "source.organizeImports": "always"
     }
-  },{% if Tailwind %}
-  "tailwindCSS.experimental.configFile": "example/comets/base.tailwind.js",{% endif %}
-  "[html][css][scss][javascript][json][jsonc][yaml]": {
+  }{% if Tailwind or Prettier %},{% endif %}{% if Tailwind %}
+  "tailwindCSS.experimental.configFile": "example/comets/base.tailwind.js"{% endif %}{% if Tailwind and Prettier %},{% endif %}{% if Prettier %}
+  "[html][css][scss][javascript][typescript][json][jsonc][markdown][yaml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  }{% endif %}
 }

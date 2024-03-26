@@ -14,6 +14,10 @@ Tailwind:
   type: bool
   help: Use tailwind
   default: no
+Prettier:
+  type: bool
+  help: Use prettier
+  default: yes
 Ruff:
   type: bool
   help: Use ruff
