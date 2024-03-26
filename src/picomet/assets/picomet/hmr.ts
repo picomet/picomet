@@ -47,12 +47,12 @@ function connect() {
         }
       } else if ("style" in data) {
         const id = data.style.split(".")[0];
-        const el = document.getElementById(id);
+        const el = document.querySelector(`[data-style-id="${id}"]`);
         if (el) {
           const linkEl = document.createElement("link");
           linkEl.rel = "stylesheet";
           linkEl.href = `/${data.assetUrl}${data.style}`;
-          linkEl.id = id;
+          linkEl.setAttribute("data-style-id", id);
           el.replaceWith(linkEl);
         }
       } else if ("script" in data) {
