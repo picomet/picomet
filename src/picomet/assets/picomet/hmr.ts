@@ -49,11 +49,7 @@ function connect() {
         const id = data.style.split(".")[0];
         const el = document.querySelector(`[data-style-id="${id}"]`);
         if (el) {
-          const linkEl = document.createElement("link");
-          linkEl.rel = "stylesheet";
-          linkEl.href = `/${data.assetUrl}${data.style}`;
-          linkEl.setAttribute("data-style-id", id);
-          el.replaceWith(linkEl);
+          el.setAttribute("href", `/${data.assetUrl}${data.style}`);
         }
       } else if ("script" in data) {
         const id = data.script.split(".")[0];

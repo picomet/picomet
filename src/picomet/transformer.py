@@ -25,6 +25,7 @@ try:
 except ImportError:
     pass
 
+DEBUG: bool = settings.DEBUG
 BASE_DIR: Path = settings.BASE_DIR
 
 EXCLUDES = ["Outlet", "Fragment", "With", "Default", "Children", "Group"]
@@ -341,13 +342,25 @@ class Transformer:
                 if get_attr(asset, "data-style-id") == asset_id:
                     exists = True
             if not exists:
-                assets.append(
-                    {
-                        "tag": "style",
-                        "attrs": [("data-style-id", asset_id)],
-                        "childrens": [compiled],
-                    }
-                )
+                if DEBUG:
+                    assets.append(
+                        {
+                            "tag": "link",
+                            "attrs": [
+                                ("rel", "stylesheet"),
+                                ("href", f"/{ASSET_URL}{fname}"),
+                                ("data-style-id", asset_id),
+                            ],
+                        }
+                    )
+                else:
+                    assets.append(
+                        {
+                            "tag": "style",
+                            "attrs": [("data-style-id", asset_id)],
+                            "childrens": [compiled],
+                        }
+                    )
         elif tag == "Js" or tag == "Ts":
             fname, _ = asset_cache[get_attr(node, "@")]
             asset_id = fname.split(".")[0]
