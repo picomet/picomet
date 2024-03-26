@@ -1,5 +1,61 @@
 <Layout @="Base">
-  <div>
-    <h1 style="text-align: center">Welcome to Picomet</h1>
+  <div style="height: 100vh; max-height: 100vh; margin: 0">
+    <Css @="Index.css" group="styles" />
+    <div style="padding: 10px">
+      <div style="border-bottom: 1px #91818159 solid">
+        <h2 style="text-align: center; margin: 10px; color: #2c89ff">
+          Picomet
+        </h2>
+      </div>
+    </div>
+    <div>
+      <div style="text-align: center; margin: 30px 0px">
+        <h1>Welcome to Picomet!</h1>
+        <p style="margin-top: 10px">
+          Get Started by editing
+          <span
+            style="background-color: #ddffff; padding: 5px; border-radius: 5px"
+          >
+            apps/core/comets/Index.html
+          </span>
+        </p>
+      </div>
+      <div
+        style="
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+        "
+      >
+        <a href="https://picomet.readthedocs.io/en/stable/comet.html">
+          <div>
+            <div style="display: flex; align-items: center">
+              <h2>Comet</h2>
+              <Include @="components/Arrow" />
+            </div>
+            <p>Learn about comet template in depth</p>
+          </div>
+        </a>
+        <a href="https://github.com/picomet/picomet/tree/main/example">
+          <div>
+            <div style="display: flex; align-items: center">
+              <h2>Example</h2>
+              <Include @="components/Arrow" />
+            </div>
+            <p>Discover the official picomet example</p>
+          </div>
+        </a>
+        <a href="https://discord.gg/4byApQZg8X">
+          <div>
+            <div style="display: flex; align-items: center">
+              <h2>Discord</h2>
+              <Include @="components/Arrow" />
+            </div>
+            <p>Join the server to get help or contribute</p>
+          </div>
+        </a>
+      </div>
+    </div>
   </div>
 </Layout>

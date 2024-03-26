@@ -1,0 +1,43 @@
+* {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    Segoe UI,
+    Roboto,
+    Helvetica Neue,
+    Arial,
+    Noto Sans,
+    sans-serif,
+    Apple Color Emoji,
+    Segoe UI Emoji,
+    Segoe UI Symbol,
+    Noto Color Emoji;
+  margin: 0;
+  padding: 0;
+}
+
+a {
+  padding: 10px;
+  border: 1px #b5d5ff solid;
+  border-radius: 10px;
+  text-decoration: none;
+  width: 300px;
+}
+
+a:hover {
+  background-color: #e5f0ffad;
+}
+
+a svg {
+  color: #2c89ff;
+}
+
+a h2 {
+  color: rgb(73, 73, 73);
+}
+
+a p {
+  color: rgb(92, 92, 92);
+}
