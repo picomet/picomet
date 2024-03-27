@@ -24,5 +24,9 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_rtd_theme"
-html_favicon = "Picomet.ico"
+html_favicon = "_static/Picomet.ico"
+html_logo = "_static/Picomet.png"
 html_static_path = ["_static"]
+html_theme_options = {
+    "logo_only": True,
+}
