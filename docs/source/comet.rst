@@ -17,7 +17,7 @@ A ``Layout`` is used by a page
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <Group name="head" />
+      <Group name="meta" />
     </head>
     <body>
       <div s-group="page">
@@ -30,13 +30,16 @@ A ``Layout`` is used by a page
 
   <!-- apps/core/comets/pages/About.html -->
   <Layout @="Base">
-    <Helmet group="head">
-      <title>About</title>
-    </Helmet>
     <div>
-      This is the about page
+      <Helmet group="meta">
+        <title>About</title>
+      </Helmet>
+      <h1>This is the about page</h1>
     </div>
   </Layout>
+
+.. warning::
+  The ``Layout`` tag must have one and only single html tag children.
 
 
 Variable
@@ -85,20 +88,6 @@ You can use single ``DTL`` tags inside comet templates.
   Comet template doesn't support multi tags like ``{% comment %}{% endcomment %}``
 
 
-Navigation
-----------
-
-For navigation Picomet provides a custom Alpine.js directive named ``x-link``
-
-.. code-block:: html
-
-  <div>
-    <a href="/about" x-link>About</a>
-  </div>
-
-When navigating from a page to another page, picomet partially renders ``s-group="page"`` elements in that template on the server and returns a json of those partials.
-
-
 .. _targets:
 
 Targets
@@ -121,36 +110,18 @@ s-param
 When you navigate from ``/&bookmarksPage=1`` to ``/&bookmarksPage=2``, Picomet partially renders ``s-param="bookmarksPage"`` elements in that page.
 
 
-Helmet
-------
+Navigation
+----------
 
-Put title and meta tags inside the head
+For navigation Picomet provides a custom Alpine.js directive named ``x-link``
 
 .. code-block:: html
-  :emphasize-lines: 5
 
-  <!-- comets/Base.html -->
-  ...
-    <head>
-      ...
-      <Group name="meta" />
-      ...
-    </head>
-  ...
+  <div>
+    <a href="/about" x-link>About</a>
+  </div>
 
-.. code-block:: text
-
-  <!-- apps/core/comets/Home.html -->
-  <Layout @="Base">
-    <Helmet group="meta">
-      <title>Home</title>
-      <meta name="title" content="..." />
-      <meta name="description" content="..." />
-    </Helmet>
-  </Layout>
-
-.. warning::
-  Tags supported inside the ``Helmet`` tag are ``title`` and ``meta``.
+When navigating from a page to another page, picomet partially renders ``s-group="page"`` elements in that template on the server and returns a json of those partials.
 
 
 Form
@@ -193,6 +164,50 @@ When the form is submitted, only the form element is partially rendered on the s
     return render(request, context)
 
 
+Head
+----
+
+Put content inside the ``head`` tag from outside.
+
+.. _group:
+
+Group
+~~~~~
+
+Define place for a group of content
+
+.. code-block:: html
+
+  <head>
+    ...
+    <Group name="meta" />
+    ...
+    <Group name="styles" />
+    ...
+  </head>
+
+Helmet
+~~~~~~
+
+Put title and meta tags inside the head
+
+.. code-block:: text
+
+  <!-- apps/core/comets/Home.html -->
+  <Layout @="Base">
+    <div>
+      <Helmet group="meta">
+        <title>Home</title>
+        <meta name="title" content="..." />
+        <meta name="description" content="..." />
+      </Helmet>
+    <div>
+  </Layout>
+
+.. warning::
+  Tags supported inside the ``Helmet`` tag are ``title`` and ``meta``.
+
+
 Assets
 ------
 
@@ -205,6 +220,8 @@ Css
   div a {
     color: red;
   }
+
+Load it in a :ref:`Group <group>`
 
 .. code-block:: text
   :emphasize-lines: 2
@@ -226,6 +243,8 @@ Sass
       color: red;
     }
   }
+
+Load it in a :ref:`Group <group>`
 
 .. code-block:: text
   :emphasize-lines: 2
