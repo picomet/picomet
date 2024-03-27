@@ -168,25 +168,10 @@ Head
 
 Put content inside the ``head`` tag from outside.
 
-.. _group:
-
-Group
-~~~~~
-
-Define place for a group of content
-
-.. code-block:: html
-
-  <head>
-    ...
-    <Group name="styles" />
-    ...
-  </head>
-
 Helmet
 ~~~~~~
 
-Put title and meta tags inside the ``head`` tag
+Put ``title`` and ``meta`` tags inside the ``head`` tag
 
 .. code-block:: text
 
@@ -204,9 +189,26 @@ Put title and meta tags inside the ``head`` tag
 .. warning::
   Tags supported inside the ``Helmet`` tag are ``title`` and ``meta``.
 
+.. _group:
+
+Group
+~~~~~
+
+Define a place for a group of :ref:`Css <css>` or :ref:`Scss <scss>` files
+
+.. code-block:: html
+
+  <head>
+    ...
+    <Group name="styles" />
+    ...
+  </head>
+
 
 Assets
 ------
+
+.. _css:
 
 Css
 ~~~
@@ -228,6 +230,8 @@ Load it in a :ref:`Group <group>`
   <div>
    <a>Link</a>
   </div>
+
+.. _scss:
 
 Sass
 ~~~~
