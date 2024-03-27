@@ -258,7 +258,7 @@ Load it in a :ref:`Group <group>`
   </div>
 
 .. important::
-  ``Sass`` requires `sass <https://npmjs.com/package/sass>`_  and `javascript <https://pypi.org/project/javascript/>`_. You will need to do ``npm i sass`` and ``pip install javascript``
+  ``Sass`` requires `sass <https://npmjs.com/package/sass>`_  and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i sass`` and ``pip install javascript``
 
 Js
 ~~~
@@ -295,7 +295,7 @@ Ts
   <button @click="say('hello')">say hello</button>
 
 .. important::
-  ``Ts`` requires `esbuild <https://npmjs.com/package/esbuild>`_  and `javascript <https://pypi.org/project/javascript/>`_. You will need to do ``npm i esbuild`` and ``pip install javascript``
+  ``Ts`` requires `esbuild <https://npmjs.com/package/esbuild>`_  and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i esbuild`` and ``pip install javascript``
 
 s-asset:
 ~~~~~~~~
@@ -512,7 +512,7 @@ Tailwind
   The ``Tailwind`` tag must be inside the head tag.
 
 .. important::
-  ``Tailwind`` requires `tailwindcss <https://npmjs.com/package/tailwindcss>`_ and `javascript <https://pypi.org/project/javascript/>`_. You will need to do ``npm i tailwindcss`` and ``pip install javascript``
+  ``Tailwind`` requires `tailwindcss <https://npmjs.com/package/tailwindcss>`_ and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i tailwindcss`` and ``pip install javascript``
 
 For tailwind to work, picomet requires 3 files.
 
@@ -551,7 +551,8 @@ The cool thing about picomet is it's ability to render alpine.js on the server
   Alpine.js directives supported on the server are ``x-data``, ``x-show``, ``x-text``, ``x-bind``. Learn more about these on `alpinejs.dev <https://alpinejs.dev>`_
 
 .. important::
-  To render Alpine.js syntax on the server Picomet requires `py-mini-racer <https://pypi.org/project/py-mini-racer>`_. You will need to do ``pip install py-mini-racer``
+  To render Alpine.js syntax on the server Picomet requires `py-mini-racer <https://pypi.org/project/py-mini-racer>`_. Run ``pip install py-mini-racer``
+
 
 s-prop
 ~~~~~~
