@@ -391,8 +391,12 @@ class Transformer:
         else:
             element: Element = {"tag": tag, "attrs": attrs, "parent": self.current}
             self.current["childrens"].append(element)
-            if tag == "Group":
-                self.groups[get_attr(node, "name")] = element
+            if tag == "head":
+                self.groups[tag] = element
+            elif tag == "Group":
+                group = get_attr(node, "name")
+                if group != "head":
+                    self.groups[get_attr(node, "name")] = element
             if isinstance(childrens, list):
                 self.current = element
                 element["childrens"] = []
@@ -424,7 +428,7 @@ class Transformer:
                     for meta in metas:
                         if isinstance(meta, dict):
                             remove_attr(meta["attrs"], "x-head")
-                    self.groups[get_attr(node, "group")]["childrens"] += metas
+                    self.groups["head"]["childrens"] += metas
                     remove_attr(attrs, "group")
                 self.current = element["parent"]
 

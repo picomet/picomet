@@ -17,7 +17,6 @@ A ``Layout`` is used by a page
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <Group name="meta" />
     </head>
     <body>
       <div s-group="page">
@@ -31,7 +30,7 @@ A ``Layout`` is used by a page
   <!-- apps/core/comets/pages/About.html -->
   <Layout @="Base">
     <div>
-      <Helmet group="meta">
+      <Helmet>
         <title>About</title>
       </Helmet>
       <h1>This is the about page</h1>
@@ -180,8 +179,6 @@ Define place for a group of content
 
   <head>
     ...
-    <Group name="meta" />
-    ...
     <Group name="styles" />
     ...
   </head>
@@ -189,14 +186,14 @@ Define place for a group of content
 Helmet
 ~~~~~~
 
-Put title and meta tags inside the head
+Put title and meta tags inside the ``head`` tag
 
 .. code-block:: text
 
   <!-- apps/core/comets/Home.html -->
   <Layout @="Base">
     <div>
-      <Helmet group="meta">
+      <Helmet>
         <title>Home</title>
         <meta name="title" content="..." />
         <meta name="description" content="..." />
