@@ -248,6 +248,8 @@ export async function call(
       const value: unknown = payload[key];
       if (typeof value == "string") {
         formData.append(key, value);
+      } else if (typeof value == "number" || typeof value == "boolean") {
+        formData.append(key, JSON.stringify(value));
       }
     }
   }
