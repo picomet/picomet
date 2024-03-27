@@ -82,6 +82,14 @@ function handleClick(event: MouseEvent) {
   }
 }
 
+function getMetaKeyValues(el: Element) {
+  return [
+    ["name", el.getAttribute("name")],
+    ["property", el.getAttribute("property")],
+    ["http-equiv", el.getAttribute("http-equiv")],
+  ];
+}
+
 function appendToHead(el: Element) {
   const copiedEl = el.cloneNode(true);
   if (copiedEl instanceof Element) {
@@ -96,25 +104,17 @@ document.addEventListener("alpine:init", () => {
     if (tag == "title") {
       document.title = el.textContent;
     } else if (tag == "meta") {
-      const name = el.getAttribute("name");
-      const property = el.getAttribute("property");
-      if (name) {
-        const meta = document.head.querySelector(
-          `meta[name="${name}"]`,
-        ) as unknown;
-        if (meta instanceof Element) {
-          meta.setAttribute("content", el.getAttribute("content"));
-        } else {
-          appendToHead(el);
-        }
-      } else if (property) {
-        const meta = document.head.querySelector(
-          `meta[property="${property}"]`,
-        ) as unknown;
-        if (meta instanceof Element) {
-          meta.setAttribute("content", el.getAttribute("content"));
-        } else {
-          appendToHead(el);
+      const keyValues = getMetaKeyValues(el);
+      for (const keyValue of keyValues) {
+        if (keyValue[1]) {
+          const meta = document.head.querySelector(
+            `meta[${keyValue[0]}="${keyValue[1]}"]`,
+          ) as unknown;
+          if (meta instanceof Element) {
+            meta.setAttribute("content", el.getAttribute("content"));
+          } else {
+            appendToHead(el);
+          }
         }
       }
     }
@@ -122,12 +122,13 @@ document.addEventListener("alpine:init", () => {
       if (tag == "title") {
         document.title = "";
       } else if (tag == "meta") {
-        const name = el.getAttribute("name");
-        const property = el.getAttribute("property");
-        if (name) {
-          document.head.querySelector(`meta[name="${name}"]`).remove();
-        } else if (property) {
-          document.head.querySelector(`meta[property="${property}"]`).remove();
+        const keyValues = getMetaKeyValues(el);
+        for (const keyValue of keyValues) {
+          if (keyValue[1]) {
+            document.head
+              .querySelector(`meta[${keyValue[0]}="${keyValue[1]}"]`)
+              .remove();
+          }
         }
       }
     });
