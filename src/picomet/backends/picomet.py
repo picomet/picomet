@@ -29,7 +29,7 @@ class Template:
         parser.feed(self.source, self.origin.name)
         transformer = Transformer(parser.ast, context, targets, keys)
         transformer.transform()
-        return transformer.contents if len(targets) else transformer.compile_content()
+        return transformer.partials if len(targets) else transformer.compile_content()
 
 
 class PicometEngine(Engine):

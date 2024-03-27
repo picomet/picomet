@@ -61,7 +61,7 @@ class Transformer:
             "parent": None,
         }
         self.current: Element = self.content
-        self.contents: dict[str, Partial] = {}
+        self.partials: dict[str, Partial] = {}
         self.c_target: str = ""
         self.groups: dict[str, Element] = {}
 
@@ -91,7 +91,7 @@ class Transformer:
                 or ((f"${file}" in self.targets) and tag and (tag not in EXCLUDES))
                 or (xpath in self.targets)
             ):
-                self.contents[xpath] = {"html": "", "css": {}, "js": {}}
+                self.partials[xpath] = {"html": "", "css": {}, "js": {}}
                 self.c_target = xpath
             else:
                 mode = get_attr(node, "mode", default=mode)
@@ -142,21 +142,21 @@ class Transformer:
 
         if isinstance(node, str):
             if self.c_target:
-                self.contents[self.c_target]["html"] += node
+                self.partials[self.c_target]["html"] += node
             else:
                 self.current["childrens"].append(node)
             return
         elif isinstance(node, StrCode):
             string = escape(str(eval(node.code, self.context)))
             if self.c_target:
-                self.contents[self.c_target]["html"] += string
+                self.partials[self.c_target]["html"] += string
             else:
                 self.current["childrens"].append(string)
             return
         elif isinstance(node, Template):
             string = node.render(self.context)
             if self.c_target:
-                self.contents[self.c_target]["html"] += string
+                self.partials[self.c_target]["html"] += string
             else:
                 self.current["childrens"].append(string)
             return
@@ -171,7 +171,7 @@ class Transformer:
         show = get_attr(node, "s-show")
         if show and not eval(show.code, self.context):
             if self.c_target:
-                self.contents[self.c_target]["html"] += (
+                self.partials[self.c_target]["html"] += (
                     f"<{tag} hidden></{tag}>" if childrens else f"<{tag} hidden />"
                 )
                 if xpath == self.c_target and tag and (tag not in EXCLUDES):
@@ -290,19 +290,19 @@ class Transformer:
         if self.c_target:
             if tag == "Css" or tag == "Sass":
                 fname, _ = asset_cache[get_attr(node, "@")]
-                self.contents[self.c_target]["css"][fname.split(".")[0]] = (
+                self.partials[self.c_target]["css"][fname.split(".")[0]] = (
                     f"/{ASSET_URL}{fname}"
                 )
             elif tag == "Js" or tag == "Ts":
                 fname, _ = asset_cache[get_attr(node, "@")]
-                self.contents[self.c_target]["js"][fname.split(".")[0]] = (
+                self.partials[self.c_target]["js"][fname.split(".")[0]] = (
                     f"/{ASSET_URL}{fname}"
                 )
             else:
                 attributes = self.join_attrs(attrs)
                 if isinstance(childrens, list):
                     if tag and (tag not in EXCLUDES):
-                        self.contents[self.c_target]["html"] += f"<{tag}{attributes}>"
+                        self.partials[self.c_target]["html"] += f"<{tag}{attributes}>"
                     if sfor:
                         if not self.handle_sfor(
                             node,
@@ -316,7 +316,7 @@ class Transformer:
                             self.unpack_store(store)
                             return False
                     elif text:
-                        self.contents[self.c_target]["html"] += text
+                        self.partials[self.c_target]["html"] += text
                     else:
                         self.loop(
                             childrens,
@@ -327,12 +327,12 @@ class Transformer:
                             **kwargs,
                         )
                     if tag and (tag not in EXCLUDES):
-                        self.contents[self.c_target]["html"] += f"</{tag}>"
+                        self.partials[self.c_target]["html"] += f"</{tag}>"
 
                     if xpath == self.c_target and tag and (tag not in EXCLUDES):
                         self.c_target = ""
                 else:
-                    self.contents[self.c_target]["html"] += f"<{tag}{attributes} />"
+                    self.partials[self.c_target]["html"] += f"<{tag}{attributes} />"
         elif tag == "Css" or tag == "Sass":
             fname, compiled = asset_cache[get_attr(node, "@")]
             asset_id = fname.split(".")[0]
