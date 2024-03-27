@@ -9,7 +9,7 @@ __pycache__
 # django
 .picomet
 .env
-db.sqlite3
+*.sqlite3
 *.mo
 
 # other
@@ -18,5 +18,3 @@ esbonio
 dist
 .DS_store
 *.tmp
-
-!src/picomet/template/.env
