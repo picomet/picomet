@@ -33,7 +33,7 @@ def profile(request: HttpRequest):
 def settings(request: HttpRequest):
     context = {}
     form = UserChangleForm(instance=request.user)
-    if request.method == "POST":
+    if request.method == "POST" and not request.action:
         form = UserChangleForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
@@ -77,7 +77,7 @@ def login_api(request: HttpRequest):
 def new(request: HttpRequest):
     context = {}
     form = BlogForm(request.user)
-    if request.method == "POST":
+    if request.method == "POST" and not request.action:
         form = BlogForm(request.user, request.POST)
         if form.is_valid():
             blog = form.save()

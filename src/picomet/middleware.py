@@ -14,6 +14,7 @@ class CommonMiddleware:
 
     def __call__(self, request: HttpRequest):
         request.targets = loads(request.headers.get("Targets", "[]"))
+        request.action = request.headers.get("Action")
 
         try:
             if request.method != "GET":

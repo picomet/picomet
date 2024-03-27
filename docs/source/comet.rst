@@ -151,7 +151,7 @@ When the form is submitted, only the form element is partially rendered on the s
   def login(request: HttpRequest):
     context = {}
     form = AuthenticationForm(request.user)
-    if request.method == "POST":
+    if request.method == "POST" and not request.action:
         form = AuthenticationForm(request.POST)
         if form.is_valid():
             username = form.cleaned_data.get("username")

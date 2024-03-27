@@ -6,7 +6,7 @@ cache = {}
 
 
 def call_action(request: HttpRequest):
-    action = request.headers.get("Action")
+    action = request.action
     if action:
         action_module, action_name = action.split(".")
         module = f"{action_module}.actions"
