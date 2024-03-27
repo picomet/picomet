@@ -146,6 +146,7 @@ When the form is submitted, only the form element is partially rendered on the s
   from django.contrib.auth.forms import AuthenticationForm
   from django.http import HttpRequest
   from picomet.decorators import template
+  from picomet.views import render
 
   @template("Login")
   def login(request: HttpRequest):
