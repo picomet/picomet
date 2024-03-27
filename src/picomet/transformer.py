@@ -581,23 +581,24 @@ class Transformer:
         return False
 
     def compile_content(self):
-        def compile(node: Element | str):
-            compiled = ""
+        content = {"html": ""}
+
+        def compile(node: Element | str, content):
             if not isinstance(node, dict):
-                compiled += str(node)
+                content["html"] += str(node)
             else:
                 tag = node["tag"]
                 childrens = node.get("childrens")
                 attributes = self.join_attrs(node["attrs"])
                 if isinstance(childrens, list):
                     if tag and (tag not in EXCLUDES):
-                        compiled += f"<{tag}{attributes}>"
+                        content["html"] += f"<{tag}{attributes}>"
                     for children in childrens:
-                        compiled += compile(children)
+                        compile(children, content)
                     if tag and (tag not in EXCLUDES):
-                        compiled += f"</{tag}>"
+                        content["html"] += f"</{tag}>"
                 else:
-                    compiled += f"<{tag}{attributes} />"
-            return compiled
+                    content["html"] += f"<{tag}{attributes} />"
 
-        return compile(self.content)
+        compile(self.content, content)
+        return content["html"]
