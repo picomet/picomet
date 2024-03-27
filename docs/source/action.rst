@@ -42,6 +42,8 @@ Now enter into the django shell and create a blog:
 
   from core.models import Blog
 
+.. code-block:: python
+
   Blog.objects.create(title="First blog", content="This is the content")
 
 Define a like action:
