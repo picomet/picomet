@@ -5,7 +5,7 @@ from django.http import HttpRequest
 
 from picomet import call_action
 from picomet.http import PicometResponseRedirect
-from picomet.shortcuts import Redirect
+from picomet.shortcuts import ActionRedirect
 
 
 class CommonMiddleware:
@@ -19,7 +19,7 @@ class CommonMiddleware:
         try:
             if request.method != "GET":
                 call_action(request)
-        except Redirect as e:
+        except ActionRedirect as e:
             return PicometResponseRedirect(e.args[0], e.args[1])
 
         response = self.get_response(request)

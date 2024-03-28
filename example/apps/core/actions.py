@@ -4,7 +4,7 @@ from django.contrib.auth import logout as _logout
 from django.http import HttpRequest
 from django.urls import reverse
 from furl import furl
-from picomet.shortcuts import Redirect
+from picomet.shortcuts import ActionRedirect
 
 from core.models import Blog, Bookmark, Comment, Like
 
@@ -16,7 +16,7 @@ def normaluser_required(function):
         REFERER = request.META.get("HTTP_REFERER", "/")
         if user.is_authenticated and not user.is_staff:
             return function(request, *args, **kwargs)
-        raise Redirect(furl(REFERER).set({"v": "login"}).url, False)
+        raise ActionRedirect(furl(REFERER).set({"v": "login"}).url, False)
 
     return wrapper
 
@@ -71,4 +71,4 @@ def delete_comment(request: HttpRequest):
 @normaluser_required
 def delete_blog(request: HttpRequest):
     Blog.objects.filter(slug=request.POST["blog"], user=request.user).delete()
-    raise Redirect(reverse("core:profile"), True)
+    raise ActionRedirect(reverse("core:profile"), True)
