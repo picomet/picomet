@@ -6,6 +6,8 @@ An ``action`` is a server function which is called from the client using the ``c
 Call
 ----
 
+Provided by ``picomet/comet.js``
+
 .. code-block:: typescript
 
   call(
