@@ -9,7 +9,7 @@ Layout
 A ``Layout`` is used by a page
 
 .. code-block:: html
-  :emphasize-lines: 10,11,12
+  :emphasize-lines: 9,10,11
 
   <!-- comets/Base.html -->
   <!doctype html>
@@ -26,6 +26,7 @@ A ``Layout`` is used by a page
   </html>
 
 .. code-block:: text
+  :emphasize-lines: 2,9
 
   <!-- apps/core/comets/pages/About.html -->
   <Layout @="Base">
