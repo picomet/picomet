@@ -233,9 +233,15 @@ export function cleanup() {
   window.removeEventListener("popstate", handlePopState);
 }
 
+type JsonValue = string | number | boolean | Blob;
+
+interface JsonData {
+  [key: string]: JsonValue;
+}
+
 export async function call(
   action: string,
-  payload: JSON | FormData,
+  payload: JsonData | FormData,
   keys?: [string, number][][],
 ) {
   const url = new URL(window.location.toString());
@@ -245,8 +251,8 @@ export async function call(
   } else {
     formData = new FormData();
     for (const key in payload) {
-      const value: unknown = payload[key];
-      if (typeof value == "string") {
+      const value: JsonValue = payload[key];
+      if (typeof value == "string" || value instanceof Blob) {
         formData.append(key, value);
       } else if (typeof value == "number" || typeof value == "boolean") {
         formData.append(key, JSON.stringify(value));
