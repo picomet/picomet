@@ -236,7 +236,7 @@ export function cleanup() {
 export async function call(
   action: string,
   payload: JSON | FormData,
-  keys: [string, number][][],
+  keys?: [string, number][][],
 ) {
   const url = new URL(window.location.toString());
   let formData: FormData;
