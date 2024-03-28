@@ -3,6 +3,37 @@ Action
 
 An ``action`` is a server function which is called from the client using the ``call`` function, it takes a HttpRequest object as an argument and returns a :ref:`Targets <targets>` list. Picomet uses that ``Target`` list to partially render a page and return a json of those partials.
 
+Call
+----
+
+.. code-block:: typescript
+
+  call(
+    action: string,
+    payload: {[key: string]: string | number | boolean | Blob} | FormData,
+    keys?: [string, number][][]
+  ): Promise<void>
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Description
+   * - action: string
+     - Action location ``app.actions.func`` > ``app.func``
+   * - | payload: {
+       |   [key: string]: string | number | boolean | Blob
+       | } | FormData
+     - | Payload sent to the action as post body
+       |
+       |
+   * - keys?: [string, number][][]
+     - Optional loop keys array for loop item partial rendering
+
+
+Usage
+-----
+
 First of all, lets create a ``Blog`` and a ``Like`` model:
 
 .. code-block:: python
