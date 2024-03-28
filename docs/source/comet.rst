@@ -135,8 +135,8 @@ When the form is submitted, only the form element is partially rendered on the s
 
   <!-- apps/core/comets/Login.html -->
   <form method="post" x-form>
-    <input type="text" name="username" />
-    <input type="password" name="password" />
+    <input type="text" name="username" s-bind:value="form['username'].value() or ''" />
+    <input type="password" name="password" s-bind:value="form['password'].value() or ''" />
     <button type="submit">Login</button>
   </form>
 
