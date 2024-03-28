@@ -139,3 +139,30 @@ Configure url:
   urlpatterns = [
       path("blogs", views.blogs, name="blogs"),
   ]
+
+
+Redirect
+--------
+
+class ``picomet.shortcuts.ActionRedirect``
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Description
+   * - redirect_to: str
+     - Path to redirect
+   * - update: bool = True
+     - Whether to update the page after redirection
+
+Return a redirection from an action
+
+.. code-block:: python
+
+  # apps/core/actions.py
+  from picomet.shortcuts import ActionRedirect
+
+  def my_action(request):
+      if not request.POST.get("var"):
+          raise ActionRedirect("/")
