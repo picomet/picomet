@@ -1,3 +1,4 @@
+import timeit
 from pathlib import Path
 
 from django.conf import settings
@@ -16,6 +17,7 @@ class Command(BaseCommand):
     help = "Build picomet for production"
 
     def handle(self, *args, **options):
+        start = timeit.default_timer()
         picomet_dir = BASE_DIR / ".picomet"
         build_dir = picomet_dir / "build"
         build_assets_dir = build_dir / "assets"
@@ -30,6 +32,7 @@ class Command(BaseCommand):
             compile_tailwind(layout)
 
         save_patterns(get_resolver().url_patterns)
+        self.stdout.write(f"✓ built in {round(timeit.default_timer() - start, 2)}s")
 
 
 def save_patterns(url_patterns: list[URLResolver | URLPattern]):
