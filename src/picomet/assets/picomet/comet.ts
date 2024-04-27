@@ -1,6 +1,6 @@
-import type AlpineType from "alpinejs";
+import { Alpine } from "alpinejs";
 import type { ElementWithXAttributes } from "alpinejs";
-declare const Alpine: typeof AlpineType;
+declare const Alpine: Alpine;
 declare const navigation: EventSource;
 
 export function getCookie(cookieName: string) {
@@ -194,6 +194,16 @@ document.addEventListener("alpine:init", () => {
     });
   }).before("data");
 });
+
+declare global {
+  interface Window {
+    Alpine: Alpine;
+  }
+}
+
+window.Alpine = Alpine;
+
+Alpine.start();
 
 export async function update(
   targets: string[],

@@ -7,13 +7,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <Group name="styles" />{% if Tailwind %}
   <Tailwind @="base" />{% endif %}
-  <Js @="picomet/comet.js" defer />
-  <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.7/cdn.min.js"
-    integrity="sha512-kJ22SdASORIix8XIrKdqHU4+nBMOg5qAWigToRMshSGut+Nn6axu6cfecNay5piPo/v9QZYI38ZIGQw2tlCaYQ=="
-    crossorigin="anonymous"
-    defer
-  ></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "alpinejs": "https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.10/module.esm.min.js"
+      }
+    }
+  </script>
   <Debug>
     <Js @="picomet/hmr.js" />
   </Debug>
@@ -25,6 +25,7 @@
       <Outlet />
     </div>
   </main>
+  <Js @="picomet/comet.js" />
 </body>
 
 </html>

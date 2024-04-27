@@ -5,13 +5,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <Tailwind @="base" />
-    <Ts @="picomet/comet.ts" defer />
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.7/cdn.min.js"
-      integrity="sha512-kJ22SdASORIix8XIrKdqHU4+nBMOg5qAWigToRMshSGut+Nn6axu6cfecNay5piPo/v9QZYI38ZIGQw2tlCaYQ=="
-      crossorigin="anonymous"
-      defer
-    ></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "alpinejs": "https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.10/module.esm.min.js"
+        }
+      }
+    </script>
     <Ts @="main.ts" />
     <Debug>
       <Ts @="picomet/hmr.ts" />
@@ -35,5 +35,6 @@
       <Include @="components/Login" />
       <Include @="components/Signup" />
     </main>
+    <Ts @="picomet/comet.ts" />
   </body>
 </html>
