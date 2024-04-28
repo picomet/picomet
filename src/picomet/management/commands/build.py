@@ -18,6 +18,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         start = timeit.default_timer()
+        settings.DEBUG = False
         picomet_dir = BASE_DIR / ".picomet"
         build_dir = picomet_dir / "build"
         build_assets_dir = build_dir / "assets"

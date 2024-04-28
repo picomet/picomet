@@ -18,8 +18,8 @@ from django.urls.resolvers import RoutePattern
 from picomet.backends.picomet import Renderer
 from picomet.loaders import cache_file, fcache, fhash
 from picomet.parser import (
-    ASSET_URL,
     ASSETFILES_DIRS,
+    STATIC_URL,
     CometParser,
     asset_cache,
     compile_asset,
@@ -211,7 +211,7 @@ def compile_file(path: str):
                         compiled.append(f)
                         hmr_send_message(
                             {
-                                "assetUrl": ASSET_URL,
+                                "staticUrl": STATIC_URL,
                                 "tailwind": asset_cache[f][0],
                             }
                         )
@@ -223,7 +223,7 @@ def compile_file(path: str):
                             compiled.append(layout)
                             hmr_send_message(
                                 {
-                                    "assetUrl": ASSET_URL,
+                                    "staticUrl": STATIC_URL,
                                     "tailwind": asset_cache[layout][0],
                                 }
                             )
@@ -237,7 +237,7 @@ def compile_file(path: str):
         compile_asset(path)
         hmr_send_message(
             {
-                "assetUrl": ASSET_URL,
+                "staticUrl": STATIC_URL,
                 "script": asset_cache[path][0],
             }
         )
@@ -245,7 +245,7 @@ def compile_file(path: str):
         compile_asset(path)
         hmr_send_message(
             {
-                "assetUrl": ASSET_URL,
+                "staticUrl": STATIC_URL,
                 "style": asset_cache[path][0],
             }
         )
@@ -258,7 +258,7 @@ def compile_file(path: str):
                 compile_tailwind(layout)
                 hmr_send_message(
                     {
-                        "assetUrl": ASSET_URL,
+                        "staticUrl": STATIC_URL,
                         "tailwind": asset_cache[layout][0],
                     }
                 )
@@ -266,7 +266,7 @@ def compile_file(path: str):
         compile_asset(path)
         hmr_send_message(
             {
-                "assetUrl": ASSET_URL,
+                "staticUrl": STATIC_URL,
                 "link": asset_cache[path][0],
             }
         )

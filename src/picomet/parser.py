@@ -167,11 +167,11 @@ class Ast(TypedDict):
 
 BUILD = sys.argv[1] == "build"
 RUNSERVER = sys.argv[1] == "runserver"
+TEST = sys.argv[1] == "test"
 RECOMPILE = sys.argv[1] == "recompile"
 
-DEBUG: bool = settings.DEBUG
 BASE_DIR: Path = settings.BASE_DIR
-ASSET_URL = getattr(settings, "ASSET_URL", "assets/")
+STATIC_URL = getattr(settings, "STATIC_URL", "/static/")
 ASSETFILES_DIRS = getattr(settings, "ASSETFILES_DIRS", [])
 
 django_engine = engines["django"]
@@ -179,7 +179,7 @@ django_engine = engines["django"]
 picomet_dir = BASE_DIR / ".picomet"
 cache_dir = picomet_dir / "cache"
 build_dir = picomet_dir / "build"
-assets_dir = (build_dir if BUILD else cache_dir) / "assets"
+assets_dir = (build_dir if (BUILD | TEST) else cache_dir) / "assets"
 
 ast_cache: dict[str, Ast] = {}
 
@@ -232,7 +232,7 @@ def save_commet(id: str, ast: Ast, dest: Path):
                             "tag": "link",
                             "attrs": [
                                 ("rel", "stylesheet"),
-                                ("href", f"/{ASSET_URL}{fname}"),
+                                ("href", f"{STATIC_URL}{fname}"),
                             ],
                         }
                 process(children)
@@ -315,7 +315,7 @@ class CometParser(BaseHTMLParser):
     def handle_addition(func):
         @functools.wraps(func)
         def wrapper(self: "CometParser", *args):
-            if self.in_debug and not DEBUG:
+            if self.in_debug and not settings.DEBUG:
                 return
             if self.is_page and not self.in_layout:
                 return
@@ -523,7 +523,7 @@ class CometParser(BaseHTMLParser):
             if tag == "Debug":
                 self.in_debug = False
                 return
-            elif not DEBUG:
+            elif not settings.DEBUG:
                 return
 
         if tag == "Layout":
@@ -546,7 +546,7 @@ class CometParser(BaseHTMLParser):
 
     @handle_addition
     def handle_data(self, data):
-        if not DEBUG and self.current["tag"] != "pre":
+        if not settings.DEBUG and self.current["tag"] != "pre":
             data = re.sub(trim_re, "", data)
         matches = list(re.finditer(x_re, data))
         if len(matches):
@@ -610,7 +610,7 @@ class CometParser(BaseHTMLParser):
                     else:
                         compile_asset(asset)
                         attributes += [
-                            (k.split(":")[1], f"/{ASSET_URL}{asset_cache[asset][0]}")
+                            (k.split(":")[1], f"{STATIC_URL}{asset_cache[asset][0]}")
                         ]
             elif k.startswith("s-static:"):
                 attributes.append((k.split(":")[1], escape(settings.STATIC_URL + v)))

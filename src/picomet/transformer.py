@@ -10,7 +10,7 @@ from django.template.backends.django import Template
 from django.utils.html import escape
 
 from picomet.parser import (
-    ASSET_URL,
+    STATIC_URL,
     Ast,
     AstNode,
     Codes,
@@ -272,7 +272,7 @@ class Transformer:
                 attrs.append(("k", escape(loops[-1][1])))
                 attrs.append(("x-prop:keys", escape(dumps(loops))))
             elif k.startswith("s-asset:"):
-                attrs.append((k.split(":")[1], f"/{ASSET_URL}{asset_cache.get(v)[0]}"))
+                attrs.append((k.split(":")[1], f"{STATIC_URL}{asset_cache.get(v)[0]}"))
             elif k == "s-for":
                 sfor = v
             elif k.startswith("x-"):
@@ -291,12 +291,12 @@ class Transformer:
             if tag == "Css" or tag == "Sass":
                 fname, _ = asset_cache[get_attr(node, "@")]
                 self.partials[self.c_target]["css"][fname.split(".")[0]] = (
-                    f"/{ASSET_URL}{fname}"
+                    f"{STATIC_URL}{fname}"
                 )
             elif tag == "Js" or tag == "Ts":
                 fname, _ = asset_cache[get_attr(node, "@")]
                 self.partials[self.c_target]["js"][fname.split(".")[0]] = (
-                    f"/{ASSET_URL}{fname}"
+                    f"{STATIC_URL}{fname}"
                 )
             else:
                 attributes = self.join_attrs(attrs)
@@ -348,7 +348,7 @@ class Transformer:
                             "tag": "link",
                             "attrs": [
                                 ("rel", "stylesheet"),
-                                ("href", f"/{ASSET_URL}{fname}"),
+                                ("href", f"{STATIC_URL}{fname}"),
                                 ("data-style-id", asset_id),
                             ],
                         }
@@ -372,7 +372,7 @@ class Transformer:
                     "tag": "script",
                     "attrs": attrs,
                     "childrens": [
-                        f'import * as module from "/{ASSET_URL}{fname}"; Object.keys(module).forEach((key) => {{if(key == "cleanup"){{window["{asset_id}_cleanup"] = module[key]}} else {{window[key] = module[key]}}}});'
+                        f'import * as module from "{STATIC_URL}{fname}"; Object.keys(module).forEach((key) => {{if(key == "cleanup"){{window["{asset_id}_cleanup"] = module[key]}} else {{window[key] = module[key]}}}});'
                     ],
                 }
             )
@@ -383,7 +383,7 @@ class Transformer:
                     "tag": "link",
                     "attrs": [
                         ("rel", "stylesheet"),
-                        ("href", f"/{ASSET_URL}{fname}"),
+                        ("href", f"{STATIC_URL}{fname}"),
                         ("data-tailwind-id", fname.split(".")[0]),
                     ],
                 }

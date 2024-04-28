@@ -14,7 +14,7 @@ function connect() {
         template: string;
       }
       interface AssetChange {
-        assetUrl: string;
+        staticUrl: string;
       }
       interface StyleChange extends AssetChange {
         style: string;
@@ -43,13 +43,13 @@ function connect() {
         const id = data.tailwind.split(".")[0];
         const el = document.querySelector(`link[data-tailwind-id="${id}"]`);
         if (el) {
-          el.setAttribute("href", `/${data.assetUrl}${data.tailwind}`);
+          el.setAttribute("href", `${data.staticUrl}${data.tailwind}`);
         }
       } else if ("style" in data) {
         const id = data.style.split(".")[0];
         const el = document.querySelector(`[data-style-id="${id}"]`);
         if (el) {
-          el.setAttribute("href", `/${data.assetUrl}${data.style}`);
+          el.setAttribute("href", `${data.staticUrl}${data.style}`);
         }
       } else if ("script" in data) {
         const id = data.script.split(".")[0];
@@ -59,7 +59,7 @@ function connect() {
           if (typeof cleanup == "function") {
             cleanup();
           }
-          import(`/${data.assetUrl}${data.script}`)
+          import(`${data.staticUrl}${data.script}`)
             .then((module: object) => {
               Object.keys(module).forEach((key) => {
                 if (key == "cleanup") {
@@ -77,7 +77,7 @@ function connect() {
         els.forEach((el) => {
           el.setAttribute(
             el.getAttribute("data-target"),
-            `/${data.assetUrl}${data.link}`,
+            `${data.staticUrl}${data.link}`,
           );
         });
       }

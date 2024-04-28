@@ -1,19 +1,6 @@
 Settings
 ========
 
-.. _asset_url:
-
-ASSET_URL
----------
-
-*type* : ``str``
-
-*default* : ``"assets/"``
-
-URL used to serve the assets like css, scss, js and others imported in your comet templates. Assets are stored inside ``app/assets`` folders.
-
-Picomet automatically serves the compiled asset files on this URL during development. See the :doc:`/deploying` guide to learn how to serve the compiled assets on production.
-
 .. _assetfiles_dirs:
 
 ASSETFILES_DIRS
@@ -24,3 +11,20 @@ ASSETFILES_DIRS
 *default* : ``[]``
 
 Additional assets directories besides ``app/assets`` dirs.
+
+
+STATICFILES_FINDERS>
+--------------------
+
+A static finder to get the assets from ``app/assets`` and ``ASSETFILES_DIRS`` folders.
+
+.. code-block:: python
+
+  # project/settings/base.py
+
+  STATICFILES_FINDERS = [
+      ...
+      "picomet.finders.AssetFinder",
+  ]
+
+Django automatically serves the static files during development under the URL `STATIC_URL <https://docs.djangoproject.com/en/5.0/ref/settings/#std-setting-STATIC_URL>`_.

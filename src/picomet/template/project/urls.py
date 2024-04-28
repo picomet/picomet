@@ -21,7 +21,6 @@ from django.urls import include, path
 from picomet.compiler import setup
 
 urlpatterns = [
-    path("", include("picomet.urls")),
     path("admin/", admin.site.urls),
     path("", include("core.urls")),
 ]

@@ -12,6 +12,8 @@ from django.utils._os import safe_join
 from picomet.backends.picomet import Template
 from picomet.utils import mdhash
 
+TEST = sys.argv[1] == "test"
+
 BASE_DIR: Path = settings.BASE_DIR
 
 cache_dir = BASE_DIR / ".picomet/cache"
@@ -78,7 +80,9 @@ class FilesystemLoader(BaseLoader):
         try:
             cached = fcache.get(origin.name)
             if not cached:
-                if not sys.argv[0].endswith("manage.py") and Path(origin.name).exists():
+                if (not sys.argv[0].endswith("manage.py") or TEST) and Path(
+                    origin.name
+                ).exists():
                     return ""
                 with open(origin.name, encoding=self.engine.file_charset) as fp:
                     cache_file(origin.name, fp.read())
