@@ -4,6 +4,12 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Build",
+      "command": "python",
+      "args": ["example/manage.py", "build"],
+      "type": "shell"
+    },
+    {
       "label": "Sphinx-autobuild",
       "type": "shell",
       "command": "sphinx-autobuild",

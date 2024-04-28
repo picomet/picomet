@@ -1,0 +1,3 @@
+-r base.txt
+Faker==24.14.1
+playwright==1.43.0

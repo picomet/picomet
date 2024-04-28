@@ -14,6 +14,16 @@
       "justMyCode": true
     },
     {
+      "name": "Python: Django Test",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/example/manage.py",
+      "args": ["test"],
+      "preLaunchTask": "Build",
+      "django": true,
+      "justMyCode": true
+    },
+    {
       "name": "Python: Django Pro",
       "type": "debugpy",
       "request": "launch",
