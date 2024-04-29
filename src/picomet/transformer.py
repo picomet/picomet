@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 from copy import copy, deepcopy
+from html import escape
 from json import dumps, loads
 from pathlib import Path
 from types import CodeType
@@ -7,33 +8,35 @@ from typing import Any, Literal, TypedDict
 
 from django.conf import settings
 from django.template.backends.django import Template
-from django.utils.html import escape
 
-from picomet.parser import (
-    STATIC_URL,
-    Ast,
-    AstNode,
-    Codes,
-    PureAttrs,
-    StrCode,
-    asset_cache,
+from picomet.parser import STATIC_URL, Ast, AstNode, Codes, StrCode, asset_cache
+from picomet.utils import (
+    DoubleQuoteEscapedStr,
+    escape_double_quote,
+    get_attr,
+    remove_attr,
+    set_attr,
 )
-from picomet.utils import get_attr, remove_attr, set_attr
 
 try:
     from py_mini_racer import MiniRacer
 except ImportError:
     pass
 
-DEBUG: bool = settings.DEBUG
 BASE_DIR: Path = settings.BASE_DIR
 
-EXCLUDES = ["Outlet", "Fragment", "With", "Default", "Children", "Group"]
+EXCLUDES = {
+    t: t for t in ["Outlet", "Fragment", "With", "Default", "Children", "Group"]
+}
+
+type EscapedAttrs = list[tuple[str, DoubleQuoteEscapedStr | None]]
+
+type Loops = list[list[str, int]]
 
 
 class Element(TypedDict):
     tag: str | None
-    attrs: PureAttrs
+    attrs: EscapedAttrs
     childrens: list["Element | str"] | None
     parent: "Element | None"
 
@@ -53,7 +56,7 @@ class Transformer:
         self.context = context
         self.ctx = None
         self.targets = targets
-        self.keys = keys
+        self.keys: Loops = keys
         self.content: Element = {
             "tag": None,
             "attrs": [],
@@ -72,7 +75,7 @@ class Transformer:
         self,
         node: AstNode,
         xpath="",
-        loops=[],
+        loops: Loops = [],
         depth=None,
         previous: bool | None = None,
         mode: Mode = "client",
@@ -100,14 +103,15 @@ class Transformer:
                 childrens = node.get("childrens", [])
                 sfor = None
 
-                for attr in node["attrs"]:
-                    k, v = attr
-                    if k.startswith("s-prop:"):
-                        self.handle_sprop(k, v, None, mode)
-                    elif k == "x-data":
-                        self.handle_xdata(v, mode)
-                    elif k == "s-for":
-                        sfor = v
+                if tag != "With" and tag != "Default":
+                    for attr in node["attrs"]:
+                        k, v = attr
+                        if k.startswith("s-prop:"):
+                            self.handle_sprop(k, v, None, mode)
+                        elif k == "x-data":
+                            self.handle_xdata(v, mode)
+                        elif k == "s-for":
+                            sfor = v
                 store = {}
                 if tag == "html" and self.ctx:
                     self.ctx.eval("var isServer = true;")
@@ -147,7 +151,7 @@ class Transformer:
                 self.current["childrens"].append(node)
             return
         elif isinstance(node, StrCode):
-            string = escape(str(eval(node.code, self.context)))
+            string = escape(str(eval(node.code, self.context)), quote=False)
             if self.c_target:
                 self.partials[self.c_target]["html"] += string
             else:
@@ -165,127 +169,141 @@ class Transformer:
         if mode == "server" and self.ctx is None:
             self.ctx = MiniRacer()
         tag = node["tag"]
-        attrs: PureAttrs = []
+        attrs: EscapedAttrs = []
         childrens = node.get("childrens")
-
-        show = get_attr(node, "s-show")
-        if show and not eval(show.code, self.context):
-            if self.c_target:
-                self.partials[self.c_target]["html"] += (
-                    f"<{tag} hidden></{tag}>" if childrens else f"<{tag} hidden />"
-                )
-                if xpath == self.c_target and tag and (tag not in EXCLUDES):
-                    self.c_target = ""
-            else:
-                self.current["childrens"].append(
-                    {
-                        "tag": tag,
-                        "attrs": [("hidden", None)],
-                        "parent": self.current,
-                        **({"childrens": []} if childrens else {}),
-                    }
-                )
-            return False
-        elif get_attr(node, "s-if") and not eval(
-            get_attr(node, "s-if").code, self.context
-        ):
-            return False
-        elif get_attr(node, "s-elif"):
-            if previous is True:
-                return True
-            elif not eval(get_attr(node, "s-elif").code, self.context):
-                return False
-        elif get_attr(node, "s-else") is None and previous is True:
-            return
-        elif get_attr(node, "s-empty") is None and previous is True:
-            return
-
-        for attr in node["attrs"]:
-            k, _ = attr
-            if not k.startswith("x-") and not k.startswith("s-") and k != "mode":
-                attrs.append(attr)
 
         text = None
         sfor = None
 
-        for attr in node["attrs"]:
-            k, v = attr
-            if k.startswith("s-prop:"):
-                self.handle_sprop(k, v, attrs, mode)
-            elif k == "x-data":
-                attrs.append(attr)
-                self.handle_xdata(v, mode)
-            elif k == "x-show":
-                attrs.append(attr)
-                if mode == "server" and self.ctx and not self.ctx.eval(v):
-                    styles = get_attr(attrs, "style", default="").split(";")
-                    styles.append("display:none!important")
-                    set_attr(attrs, "style", ";".join(styles))
-            elif k == "s-text":
-                text = escape(eval(v.code, self.context))
-            elif k == "x-text":
-                attrs.append(attr)
-                if mode == "server" and self.ctx:
-                    text = escape(self.ctx.eval(v))
-            elif k.startswith("s-bind:"):
-                if k.split(":")[1] == "class":
-                    set_attr(
-                        attrs,
-                        "class",
-                        self.add_classes(
-                            get_attr(attrs, "class", default=""),
-                            [escape(eval(v.code, self.context))],
-                        ),
+        if tag != "With" and tag != "Default":
+            show = get_attr(node, "s-show")
+            if show and not eval(show.code, self.context):
+                if self.c_target:
+                    self.partials[self.c_target]["html"] += (
+                        f"<{tag} hidden></{tag}>" if childrens else f"<{tag} hidden />"
                     )
+                    if xpath == self.c_target and tag and (tag not in EXCLUDES):
+                        self.c_target = ""
                 else:
-                    value = eval(v.code, self.context)
-                    if k.split(":")[1] == "x-prop":
-                        value = dumps(value)
-                    attrs.append((":".join(k.split(":")[1:]), escape(value)))
-            elif k.startswith("s-toggle:"):
-                val = eval(v.code, self.context)
-                if val is True:
-                    attrs.append((":".join(k.split(":")[1:]), None))
-            elif k.startswith("x-bind:"):
-                attrs.append(attr)
-                if mode == "server" and self.ctx:
+                    self.current["childrens"].append(
+                        {
+                            "tag": tag,
+                            "attrs": [("hidden", None)],
+                            "parent": self.current,
+                            **({"childrens": []} if childrens else {}),
+                        }
+                    )
+                return False
+            elif get_attr(node, "s-if") and not eval(
+                get_attr(node, "s-if").code, self.context
+            ):
+                return False
+            elif get_attr(node, "s-elif"):
+                if previous is True:
+                    return True
+                elif not eval(get_attr(node, "s-elif").code, self.context):
+                    return False
+            elif get_attr(node, "s-else") is None and previous is True:
+                return
+            elif get_attr(node, "s-empty") is None and previous is True:
+                return
+
+            for attr in node["attrs"]:
+                k, v = attr
+                if not k.startswith("x-") and not k.startswith("s-") and k != "mode":
+                    if isinstance(v, str):
+                        attrs.append((k, DoubleQuoteEscapedStr(v)))
+                    elif v is None:
+                        attrs.append(attr)
+
+            for attr in node["attrs"]:
+                k, v = attr
+                if k.startswith("s-prop:"):
+                    self.handle_sprop(k, v, attrs, mode)
+                elif k == "x-data":
+                    attrs.append(attr)
+                    self.handle_xdata(v, mode)
+                elif k == "x-show":
+                    attrs.append(attr)
+                    if mode == "server" and self.ctx and not self.ctx.eval(v):
+                        styles = get_attr(attrs, "style", default="").split(";")
+                        styles.append("display:none!important")
+                        set_attr(attrs, "style", ";".join(styles))
+                elif k == "s-text":
+                    text = escape(eval(v.code, self.context), quote=False)
+                elif k == "x-text":
+                    attrs.append(attr)
+                    if mode == "server" and self.ctx:
+                        text = escape(self.ctx.eval(v), quote=False)
+                elif k.startswith("s-bind:"):
                     if k.split(":")[1] == "class":
-                        if v.startswith("{"):
-                            self.ctx.eval(
-                                f"var classes = {v}; var klasses = []; for (let k in classes) {{ if (classes[k]) {{klasses.push(k)}} }};"
-                            )
-                            set_attr(
-                                attrs,
-                                "class",
-                                self.add_classes(
-                                    get_attr(attrs, "class", default=""),
-                                    loads(self.ctx.eval("JSON.stringify(klasses)")),
-                                ),
-                            )
-                        else:
-                            set_attr(attrs, "class", escape(self.ctx.eval(v)))
+                        set_attr(
+                            attrs,
+                            "class",
+                            self.add_classes(
+                                get_attr(attrs, "class", default=""),
+                                [escape_double_quote(eval(v.code, self.context))],
+                            ),
+                        )
                     else:
-                        val = self.ctx.eval(v)
-                        if val is not False:
-                            attrs.append((k.split(":")[1], escape(val)))
-            elif k == "s-k":
-                attrs.append(("k", escape(loops[-1][1])))
-                attrs.append(("x-prop:keys", escape(dumps(loops))))
-            elif k.startswith("s-asset:"):
-                attrs.append((k.split(":")[1], f"{STATIC_URL}{asset_cache.get(v)[0]}"))
-            elif k == "s-for":
-                sfor = v
-            elif k.startswith("x-"):
-                attrs.append(attr)
+                        value = eval(v.code, self.context)
+                        if k.split(":")[1] == "x-prop":
+                            value = dumps(value)
+                        attrs.append(
+                            (":".join(k.split(":")[1:]), escape_double_quote(value))
+                        )
+                elif k.startswith("s-toggle:"):
+                    val = eval(v.code, self.context)
+                    if val is True:
+                        attrs.append((":".join(k.split(":")[1:]), None))
+                elif k.startswith("x-bind:"):
+                    attrs.append(attr)
+                    if mode == "server" and self.ctx:
+                        if k.split(":")[1] == "class":
+                            if v.startswith("{"):
+                                self.ctx.eval(
+                                    f"var classes = {v}; var klasses = []; for (let k in classes) {{ if (classes[k]) {{klasses.push(k)}} }};"
+                                )
+                                set_attr(
+                                    attrs,
+                                    "class",
+                                    self.add_classes(
+                                        get_attr(attrs, "class", default=""),
+                                        loads(self.ctx.eval("JSON.stringify(klasses)")),
+                                    ),
+                                )
+                            else:
+                                set_attr(
+                                    attrs,
+                                    "class",
+                                    escape_double_quote(self.ctx.eval(v)),
+                                )
+                        else:
+                            val = self.ctx.eval(v)
+                            if val is not False:
+                                attrs.append(
+                                    (k.split(":")[1], escape_double_quote(val))
+                                )
+                elif k == "s-k":
+                    attrs.append(("k", escape(str(loops[-1][1]))))
+                    attrs.append(("x-prop:keys", escape_double_quote(dumps(loops))))
+                elif k.startswith("s-asset:"):
+                    attrs.append(
+                        (k.split(":")[1], f"{STATIC_URL}{asset_cache.get(v)[0]}")
+                    )
+                elif k == "s-for":
+                    sfor = v
+                elif k.startswith("x-"):
+                    attrs.append(attr)
 
         store = {}
         if tag == "html" and self.ctx:
             self.ctx.eval("var isServer = true;")
             attrs.append(("x-data", "{isServer: false, keys: []}"))
         elif tag == "With":
-            self.pack_with(attrs, store)
+            self.pack_with(node["attrs"], store)
         elif tag == "Default":
-            self.pack_defaults(attrs, store)
+            self.pack_defaults(node["attrs"], store)
 
         if self.c_target:
             if tag == "Css" or tag == "Sass":
@@ -342,7 +360,7 @@ class Transformer:
                 if get_attr(asset, "data-style-id") == asset_id:
                     exists = True
             if not exists:
-                if DEBUG:
+                if settings.DEBUG:
                     assets.append(
                         {
                             "tag": "link",
@@ -489,14 +507,14 @@ class Transformer:
             previous = _return if isinstance(children, dict) else previous
 
     def handle_sprop(
-        self, k: str, v: str | CodeType, attrs: PureAttrs | None, mode: Mode
+        self, k: str, v: str | CodeType, attrs: EscapedAttrs | None, mode: Mode
     ):
         if mode == "server" and self.ctx:
             prop = k.split(":")[1]
             value = dumps(eval(v.code, self.context))
             self.ctx.eval(f"var {prop} = JSON.parse('{value.replace("'","\\'")}');")
             if isinstance(attrs, list):
-                attrs.append((f"x-prop:{prop}", escape(value)))
+                attrs.append((f"x-prop:{prop}", escape_double_quote(value)))
 
     def handle_xdata(self, v: str, mode: str):
         if mode == "server" and self.ctx and v.strip().startswith("{"):
@@ -521,7 +539,7 @@ class Transformer:
             self.context[sfor] = item
             self.context["index"] = index
             if skey:
-                loops = [
+                loops: Loops = [
                     *kwargs["loops"],
                     [kwargs["xpath"], eval(skey.code, self.context)],
                 ]
@@ -553,7 +571,7 @@ class Transformer:
                 klasses.append(klass)
         return " ".join(klasses)
 
-    def join_attrs(self, attrs: PureAttrs):
+    def join_attrs(self, attrs: EscapedAttrs):
         return "".join(
             map(
                 lambda attr: f' {attr[0]}="{attr[1]}"' if attr[1] else f" {attr[0]}",
