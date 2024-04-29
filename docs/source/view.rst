@@ -1,6 +1,9 @@
 View
 ====
 
+Setup
+-----
+
 First of all, create a comet template:
 
 .. code-block:: text
@@ -40,3 +43,30 @@ Configure url:
   urlpatterns = [
       path("new", views.new, name="new"),
   ]
+
+
+Redirect
+--------
+
+class ``picomet.http.PicometResponseRedirect``
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Description
+   * - redirect_to: str
+     - Path to redirect
+   * - update: bool = True
+     - Whether to update the page after redirection
+
+
+.. code-block:: python
+
+  # apps/core/views.py
+  from picomet.http import PicometResponseRedirect
+
+  @template("Index")
+  def index(request):
+      if not request.user.is_authenticated:
+          return PicometResponseRedirect("/login")
