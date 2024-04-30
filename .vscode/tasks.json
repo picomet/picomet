@@ -10,6 +10,13 @@
       "type": "shell"
     },
     {
+      "label": "Collectstatic",
+      "command": "python",
+      "args": ["example/manage.py", "collectstatic", "--no-input"],
+      "type": "shell",
+      "dependsOn": ["Build"]
+    },
+    {
       "label": "Sphinx-autobuild",
       "type": "shell",
       "command": "sphinx-autobuild",

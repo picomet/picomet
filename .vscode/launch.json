@@ -30,6 +30,7 @@
       "cwd": "${workspaceFolder}/example",
       "program": "../env/bin/gunicorn",
       "args": ["project.wsgi:application", "-b", "localhost:9000"],
+      "preLaunchTask": "Collectstatic",
       "django": true
     }
   ]
