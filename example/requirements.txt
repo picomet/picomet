@@ -1,1 +1,2 @@
 -r requirements/base.txt
+whitenoise==6.6.0
