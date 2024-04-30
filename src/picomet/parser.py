@@ -166,6 +166,7 @@ class Ast(TypedDict):
 
 
 BUILD = sys.argv[1] == "build"
+COLLECTSTATIC = sys.argv[1] == "collectstatic"
 RUNSERVER = sys.argv[1] == "runserver"
 TEST = sys.argv[1] == "test"
 RECOMPILE = sys.argv[1] == "recompile"
@@ -179,7 +180,7 @@ django_engine = engines["django"]
 picomet_dir = BASE_DIR / ".picomet"
 cache_dir = picomet_dir / "cache"
 build_dir = picomet_dir / "build"
-assets_dir = (build_dir if (BUILD | TEST) else cache_dir) / "assets"
+assets_dir = (build_dir if (TEST | BUILD | COLLECTSTATIC) else cache_dir) / "assets"
 
 ast_cache: dict[str, Ast] = {}
 
