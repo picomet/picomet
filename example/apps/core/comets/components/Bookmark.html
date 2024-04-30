@@ -5,6 +5,7 @@
     s-bind:x-prop:bookmarked="bookmarked"
     s-bind:x-prop:blog_id="blog.id"
     @click="call(bookmarked ? 'core.unbookmark' : 'core.bookmark', {blog: blog_id}, keys)"
+    s-bind:aria-label="'Unbookmark' if bookmarked else 'Bookmark'"
   >
     <svg
       s-if="bookmarked"
