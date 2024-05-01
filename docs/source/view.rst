@@ -59,6 +59,8 @@ class ``picomet.http.PicometResponseRedirect``
      - Path to redirect
    * - update: bool = True
      - Whether to update the page after redirection
+   * - headers: dict = None
+     - Http headers to be sent with the response
 
 
 .. code-block:: python
