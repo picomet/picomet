@@ -16,14 +16,16 @@ Additional assets directories besides ``app/assets`` dirs.
 STATICFILES_FINDERS>
 --------------------
 
-A static finder to get the assets from ``app/assets`` and ``ASSETFILES_DIRS`` folders.
+A static finder to get the assets used from ``app/assets`` and ``ASSETFILES_DIRS`` folders.
 
 .. code-block:: python
+  :emphasize-lines: 6
 
   # project/settings/base.py
 
   STATICFILES_FINDERS = [
-      ...
+      "django.contrib.staticfiles.finders.FileSystemFinder",
+      "django.contrib.staticfiles.finders.AppDirectoriesFinder",
       "picomet.finders.AssetFinder",
   ]
 
