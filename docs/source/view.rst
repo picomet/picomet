@@ -66,9 +66,16 @@ class ``picomet.http.PicometResponseRedirect``
 .. code-block:: python
 
   # apps/core/views.py
+  from django.contrib.auth.forms import UserCreationForm
   from picomet.http import PicometResponseRedirect
 
   @template("Index")
   def index(request):
-      if not request.user.is_authenticated:
-          return PicometResponseRedirect("/login")
+      if request.method == "POST" and not request.action:
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return PicometResponseRedirect("/acount")
+
+.. note::
+  ``PicometResponseRedirect`` can only be returned when ``request.targets`` has any targets or ``request.action`` exists.
