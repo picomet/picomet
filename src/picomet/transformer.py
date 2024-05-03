@@ -242,7 +242,7 @@ class Transformer:
                             "class",
                             self.add_classes(
                                 get_attr(attrs, "class", default=""),
-                                [escape_double_quote(eval(v.code, self.context))],
+                                [escape_double_quote(str(eval(v.code, self.context)))],
                             ),
                         )
                     else:
@@ -250,7 +250,10 @@ class Transformer:
                         if k.split(":")[1] == "x-prop":
                             value = dumps(value)
                         attrs.append(
-                            (":".join(k.split(":")[1:]), escape_double_quote(value))
+                            (
+                                ":".join(k.split(":")[1:]),
+                                escape_double_quote(str(value)),
+                            )
                         )
                 elif k.startswith("s-toggle:"):
                     val = eval(v.code, self.context)
@@ -276,13 +279,13 @@ class Transformer:
                                 set_attr(
                                     attrs,
                                     "class",
-                                    escape_double_quote(self.ctx.eval(v)),
+                                    escape_double_quote(str(self.ctx.eval(v))),
                                 )
                         else:
                             val = self.ctx.eval(v)
                             if val is not False:
                                 attrs.append(
-                                    (k.split(":")[1], escape_double_quote(val))
+                                    (k.split(":")[1], escape_double_quote(str(val)))
                                 )
                 elif k == "s-k":
                     attrs.append(("k", escape(str(loops[-1][1]))))
