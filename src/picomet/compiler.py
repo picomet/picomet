@@ -3,6 +3,7 @@ import site
 import sys
 import threading
 import time
+from copy import deepcopy
 from itertools import chain
 from pathlib import Path
 
@@ -187,9 +188,10 @@ def compile_file(path: str):
     if ext == ".html" and (cache_dir / f"comets/{mdhash(path,8)}.json").exists():
         parser = CometParser()
         parser.feed(fcache[path], path, use_cache=False)
+        dmap = deepcopy(dgraph)
 
         def update(p):
-            for d in dgraph.get(p, []):
+            for d in dmap.get(p, []):
                 if not fcache.get(d):
                     with open(d) as f:
                         cache_file(d, f.read())
