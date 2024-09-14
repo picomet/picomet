@@ -1,6 +1,5 @@
-import { Alpine } from "alpinejs";
+import Alpine from "alpinejs";
 import type { ElementWithXAttributes } from "alpinejs";
-declare const Alpine: Alpine;
 declare const navigation: EventSource;
 
 export function getCookie(cookieName: string) {
@@ -197,7 +196,7 @@ document.addEventListener("alpine:init", () => {
 
 declare global {
   interface Window {
-    Alpine: Alpine;
+    Alpine: typeof Alpine;
   }
 }
 
