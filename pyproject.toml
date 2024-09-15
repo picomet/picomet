@@ -1,6 +1,6 @@
 [project]
 name = "picomet"
-version = "0.0.15"
+version = "0.0.16"
 authors = [{ name = "Al Mahdi", email = "picometproject@gmail.com" }]
 license = { file = "LICENSE" }
 description = "The nextjs of django"
@@ -60,3 +60,4 @@ check_untyped_defs = true
 disallow_untyped_defs = true
 implicit_reexport = false
 files = "src/picomet/*.py,src/picomet/backends/*.py,src/picomet/management/**/*.py"
+exclude = "example/**/*.py"
