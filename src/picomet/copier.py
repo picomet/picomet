@@ -12,3 +12,4 @@ class VarsExtension(Extension):
         super().__init__(environment)
         environment.globals["DJ_SECRET_KEY"] = get_random_secret_key()
         environment.globals["PICOMET_VERSION"] = version("picomet")
+        environment.globals["DJANGO_VERSION"] = version("django")
