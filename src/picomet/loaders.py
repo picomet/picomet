@@ -1,10 +1,13 @@
 import sys
+from collections.abc import Iterable
 from json import dumps, loads
 from pathlib import Path
+from typing import override
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
 from django.template import Origin, TemplateDoesNotExist
+from django.template.engine import Engine
 from django.template.loaders.base import Loader
 from django.template.utils import get_app_template_dirs
 from django.utils._os import safe_join
@@ -28,7 +31,7 @@ if sys.argv[1] == "runserver":
         pass
 
 
-def cache_file(path: str, content: str):
+def cache_file(path: str, content: str) -> None:
     fcache[path] = content
     if sys.argv[1] != "build":
         fhash[path] = mdhash(fcache[path], 8)
@@ -37,7 +40,9 @@ def cache_file(path: str, content: str):
 
 
 class BaseLoader(Loader):
-    def get_template(self, template_name, skip=None):
+    def get_template(
+        self, template_name: str, skip: list[Origin] | None = None
+    ) -> Template:
         """
         Call self.get_template_sources() and return a Template object for
         the first template matching template_name. If skip is provided, ignore
@@ -70,13 +75,13 @@ class BaseLoader(Loader):
 
 
 class FilesystemLoader(BaseLoader):
-    def __init__(self, engine):
+    def __init__(self, engine: Engine):
         super().__init__(engine)
 
-    def get_dirs(self):
+    def get_dirs(self) -> list[str]:
         return self.engine.dirs
 
-    def get_contents(self, origin: Origin):
+    def get_contents(self, origin: Origin) -> str:
         try:
             cached = fcache.get(origin.name)
             if not cached:
@@ -91,7 +96,7 @@ class FilesystemLoader(BaseLoader):
         except FileNotFoundError:
             raise TemplateDoesNotExist(origin)
 
-    def get_template_sources(self, template_name):
+    def get_template_sources(self, template_name: str) -> Iterable[Origin]:
         """
         Return an Origin object pointing to an absolute path in each directory
         in template_dirs. For security reasons, if a path doesn't lie inside
@@ -113,5 +118,6 @@ class FilesystemLoader(BaseLoader):
 
 
 class AppdirLoader(FilesystemLoader):
-    def get_dirs(self):
-        return get_app_template_dirs("comets")
+    @override
+    def get_dirs(self) -> list[str]:
+        return list(get_app_template_dirs("comets"))

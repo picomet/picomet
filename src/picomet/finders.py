@@ -13,9 +13,11 @@ class AssetFinder(FileSystemFinder):
     and uses the ``ASSETFILES_DIRS`` setting to locate files.
     """
 
-    def __init__(self, app_names=None, *args, **kwargs):
+    def __init__(
+        self, app_names: list[str] = [], *args: list[Any], **kwargs: dict[str, Any]
+    ):
         # List of locations with asset files
-        self.locations = []
+        self.locations: list[tuple[str, str]] = []
         # Maps dir paths to an appropriate storage instance
         self.storages = {}
         for root in [assets_dir.as_posix()]:

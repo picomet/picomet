@@ -1,11 +1,12 @@
 from importlib import import_module
+from types import ModuleType
 
 from django.http import HttpRequest
 
-cache = {}
+cache: dict[str, ModuleType] = {}
 
 
-def call_action(request: HttpRequest):
+def call_action(request: HttpRequest) -> None:
     action = request.action
     if action:
         action_module, action_name = action.split(".")

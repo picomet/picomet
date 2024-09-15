@@ -6,6 +6,7 @@ import time
 from copy import deepcopy
 from itertools import chain
 from pathlib import Path
+from typing import Any
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -35,19 +36,19 @@ picomet_dir = BASE_DIR / ".picomet"
 cache_dir = picomet_dir / "cache"
 
 
-def setup():
+def setup() -> None:
     if sys.argv[1] == "runserver":
 
-        def watch(path: str):
+        def watch(path: str) -> None:
             from watchdog.events import FileSystemEvent, FileSystemEventHandler
             from watchdog.observers import Observer
 
             class EventHandler(FileSystemEventHandler):
-                def __init__(self, *args, **kwargs):
+                def __init__(self, *args: list[Any], **kwargs: dict[str, Any]):
                     super().__init__(*args, **kwargs)
-                    self.time = {"modified": {}}
+                    self.time: dict["str", dict[str, float]] = {"modified": {}}
 
-                def dispatch(self, event: FileSystemEvent):
+                def dispatch(self, event: FileSystemEvent) -> None:
                     src_path = event.src_path
                     _, ext = os.path.splitext(src_path)
                     tm = time.time()
@@ -79,9 +80,9 @@ def setup():
 
             comets_dir = cache_dir / "comets"
             assets_dir = cache_dir / "assets"
-            for d in [comets_dir, assets_dir]:
-                if not d.is_dir():
-                    d.mkdir()
+            for folder in [comets_dir, assets_dir]:
+                if not folder.is_dir():
+                    folder.mkdir()
 
             parse_patterns(get_resolver().url_patterns)
 
@@ -89,7 +90,7 @@ def setup():
                 compile_tailwind(layout)
         else:
 
-            def validate_cache():
+            def validate_cache() -> None:
                 for file in fhash:
                     if Path(file).exists():
                         with open(file) as f:
@@ -142,7 +143,7 @@ def setup():
                     thread.start()
 
 
-def parse_patterns(url_patterns: list[URLResolver | URLPattern]):
+def parse_patterns(url_patterns: list[URLResolver | URLPattern]) -> None:
     for url_pattern in url_patterns:
         if (
             isinstance(url_pattern, URLPattern)
@@ -167,7 +168,7 @@ def parse_patterns(url_patterns: list[URLResolver | URLPattern]):
             )
 
 
-def is_file_changed(path: str):
+def is_file_changed(path: str) -> bool:
     with open(path) as f:
         content = f.read()
         cached = fhash.get(path)
@@ -182,7 +183,7 @@ def is_file_changed(path: str):
             return True
 
 
-def compile_file(path: str):
+def compile_file(path: str) -> None:
     _, ext = os.path.splitext(path)
 
     if ext == ".html" and (cache_dir / f"comets/{mdhash(path,8)}.json").exists():
@@ -190,7 +191,7 @@ def compile_file(path: str):
         parser.feed(fcache[path], path, use_cache=False)
         dmap = deepcopy(dgraph)
 
-        def update(p):
+        def update(p: str) -> None:
             for d in dmap.get(p, []):
                 if not fcache.get(d):
                     with open(d) as f:
@@ -206,7 +207,7 @@ def compile_file(path: str):
         else:
             compiled = []
 
-            def traverse(f: str):
+            def traverse(f: str) -> None:
                 if f in twlayouts.keys():
                     if f not in compiled:
                         compile_tailwind(f)
@@ -219,7 +220,7 @@ def compile_file(path: str):
                         )
 
                 for layout in twlayouts.keys():
-                    if f in dgraph.get(layout):
+                    if f in dgraph.get(layout, []):
                         if layout not in compiled:
                             compile_tailwind(layout)
                             compiled.append(layout)
@@ -274,7 +275,7 @@ def compile_file(path: str):
         )
 
 
-def hmr_send_message(message: dict):
+def hmr_send_message(message: dict) -> None:
     channel_layer = get_channel_layer()
     async_to_sync(channel_layer.group_send)(
         "hmr",

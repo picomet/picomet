@@ -24,6 +24,13 @@ repos:
         types_or: [ts, javascript, json]
   - repo: local
     hooks:
+      - id: mypy
+        name: mypy
+        entry: mypy
+        args: [--enable-incomplete-feature=NewGenericSyntax]
+        files: src/(picomet/.+py|picomet/backends/.+py|picomet/management/.+/.+py)$
+        language: system
+        pass_filenames: false
       - id: tsc-picomet
         name: tsc picomet
         entry: npx tsc -p tsconfig.json

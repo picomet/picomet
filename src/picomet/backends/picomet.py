@@ -1,5 +1,5 @@
 from json import loads
-from typing import Any
+from typing import Any, NotRequired, Optional, TypedDict, Unpack
 
 from django.http import HttpRequest
 from django.template import Origin, TemplateDoesNotExist
@@ -13,10 +13,17 @@ from django.utils.module_loading import import_string
 
 from picomet.parser import CometParser
 from picomet.transformer import Transformer
+from picomet.types import Loops
 
 
 class Template:
-    def __init__(self, template_string, origin=None, name=None, engine=None):
+    def __init__(
+        self,
+        template_string: str,
+        origin: Origin | None = None,
+        name: str | None = None,
+        engine: Engine | None = None,
+    ):
         if origin is None:
             origin = Origin(UNKNOWN_SOURCE)
         self.name = name
@@ -24,7 +31,9 @@ class Template:
         self.engine = engine
         self.source = str(template_string)  # May be lazy
 
-    def render(self, context: dict[str, Any], targets: list[str], keys):
+    def render(
+        self, context: dict[str, Any], targets: list[str], keys: Loops
+    ) -> dict | str:
         parser = CometParser()
         parser.feed(self.source, self.origin.name)
         transformer = Transformer(parser.ast, context, targets, keys)
@@ -32,8 +41,14 @@ class Template:
         return transformer.partials if len(targets) else transformer.compile_content()
 
 
+class PicometEngineKwargs(TypedDict):
+    app_dirs: NotRequired[bool]
+    loaders: list[str]
+    components: NotRequired[dict[str, str]]
+
+
 class PicometEngine(Engine):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: list[Any], **kwargs: Unpack[PicometEngineKwargs]):
         kwargs.setdefault("app_dirs", False)
         kwargs.setdefault("loaders", [])
         kwargs["loaders"] += [
@@ -43,7 +58,7 @@ class PicometEngine(Engine):
         self.components = kwargs.pop("components", {})
         super().__init__(*args, **kwargs)
 
-    def get_template(self, template_name):
+    def get_template(self, template_name: str) -> Template:
         """
         Return a compiled Template object for the given template name,
         handling template inheritance recursively.
@@ -55,39 +70,42 @@ class PicometEngine(Engine):
         return template
 
     @cached_property
-    def imported_context_processors(self):
+    def imported_context_processors(self) -> list[str]:
         return [import_string(path) for path in self.context_processors]
 
 
 class PicometTemplates(BaseBackend):
     app_dirname = "comets"
 
-    def __init__(self, params):
+    def __init__(self, params: dict[str, Any]):
         params = params.copy()
         options = params.pop("OPTIONS").copy()
         super().__init__(params)
         self.engine = PicometEngine(self.dirs, **options)
 
-    def from_string(self, template_code):
+    def from_string(self, template_code: str) -> "Renderer":
         return Renderer(self.engine.from_string(template_code), self)
 
-    def get_template(self, template_name):
+    def get_template(self, template_name: str) -> Optional["Renderer"]:
         try:
             return Renderer(self.engine.get_template(template_name), self)
         except TemplateDoesNotExist as exc:
             reraise(exc, self)
+        return None
 
 
 class Renderer:
-    def __init__(self, template, backend):
+    def __init__(self, template: Template, backend: PicometTemplates):
         self.template: Template = template
         self.backend: PicometTemplates = backend
 
     @property
-    def origin(self):
+    def origin(self) -> Origin:
         return self.template.origin
 
-    def render(self, context: dict[str, Any] = {}, request: HttpRequest = None):
+    def render(
+        self, context: dict[str, Any] = {}, request: HttpRequest = None
+    ) -> dict | str:
         if request is not None:
             context["csrf_input"] = csrf_input_lazy(request)
             context["csrf_token"] = csrf_token_lazy(request)

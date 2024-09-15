@@ -1,17 +1,32 @@
 from hashlib import md5
 from types import CodeType
-from typing import Any, Self, overload
+from typing import Any
+
+from picomet.types import (
+    AstAttrs,
+    DoubleQuoteEscapedStr,
+    ElementWithAttrs,
+    PureAttrs,
+    StrCode,
+)
 
 
-def get_attr[T](obj: dict | list, name: str, default: T = False):
+def get_atrb(
+    obj: ElementWithAttrs | AstAttrs | PureAttrs, name: str, default: str | bool = False
+) -> DoubleQuoteEscapedStr | StrCode | None | str | bool:
+    attrs: AstAttrs | PureAttrs
     if isinstance(obj, dict):
         attrs = obj["attrs"]
-    elif isinstance(obj, list):
+    else:
         attrs = obj
     return next(filter(lambda attr: attr[0] == name, attrs), [name, default])[1]
 
 
-def set_attr(attrs: list[tuple[str, Any]], name: str, value: str | CodeType | None):
+def set_atrb(
+    attrs: list[tuple[str, Any]],
+    name: str,
+    value: DoubleQuoteEscapedStr | CodeType | None,
+) -> None:
     for index, attr in enumerate(attrs):
         if attr[0] == name:
             attrs[index] = (name, value)
@@ -19,28 +34,17 @@ def set_attr(attrs: list[tuple[str, Any]], name: str, value: str | CodeType | No
     attrs.append((name, value))
 
 
-def remove_attr(attrs: list[tuple[str, Any]], name: str):
+def remove_atrb(attrs: list[tuple[str, Any]], name: str) -> None:
     for index, attr in enumerate(attrs):
         if attr[0] == name:
             del attrs[index]
 
 
-def mdhash(string: str, length: int):
+def mdhash(string: str, length: int) -> str:
     return md5(string.encode()).hexdigest()[:length]
 
 
-class DoubleQuoteEscapedStr(str):
-    @overload
-    def __add__(self, rhs: Self) -> Self: ...
-    @overload
-    def __add__(self, rhs: str) -> str: ...
-    @overload
-    def __iadd__(self, rhs: Self) -> Self: ...
-    @overload
-    def __iadd__(self, rhs: str) -> str: ...
-
-
-def escape_double_quote(s: str):
+def escape_double_quote(s: str) -> DoubleQuoteEscapedStr:
     """
     Replace double quote (") character to HTML-safe sequence.
     """
