@@ -3,13 +3,13 @@ from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
-from picomet.decorators import template
-from picomet.http import PicometResponseRedirect
-from picomet.views import render
 
 from core.decorators import normaluser_required
 from core.forms import AuthenticationForm, BlogForm, UserAddForm, UserChangleForm
 from core.models import Blog, Bookmark, User
+from picomet.decorators import template
+from picomet.http import PicometResponseRedirect
+from picomet.views import render
 
 
 @ensure_csrf_cookie

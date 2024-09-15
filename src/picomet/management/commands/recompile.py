@@ -5,6 +5,7 @@ from typing import Any
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.urls import get_resolver
+
 from picomet.compiler import parse_patterns
 from picomet.parser import compile_tailwind, twlayouts
 

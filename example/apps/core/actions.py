@@ -4,9 +4,9 @@ from django.contrib.auth import logout as _logout
 from django.http import HttpRequest
 from django.urls import reverse
 from furl import furl
-from picomet.shortcuts import ActionRedirect
 
 from core.models import Blog, Bookmark, Comment, Like
+from picomet.shortcuts import ActionRedirect
 
 
 def normaluser_required(function):

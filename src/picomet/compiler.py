@@ -46,7 +46,7 @@ def setup() -> None:
             class EventHandler(FileSystemEventHandler):
                 def __init__(self, *args: list[Any], **kwargs: dict[str, Any]):
                     super().__init__(*args, **kwargs)
-                    self.time: dict["str", dict[str, float]] = {"modified": {}}
+                    self.time: dict[str, dict[str, float]] = {"modified": {}}
 
                 def dispatch(self, event: FileSystemEvent) -> None:
                     src_path = event.src_path

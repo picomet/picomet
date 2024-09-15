@@ -18,6 +18,7 @@ from django.conf import settings  # noqa: F401
 from django.conf.urls.static import static  # noqa: F401
 from django.contrib import admin
 from django.urls import include, path
+
 from picomet.compiler import setup
 
 urlpatterns = [
