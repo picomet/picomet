@@ -189,6 +189,11 @@ if RUNSERVER:
         pass
 
 
+def save_dgraph() -> None:
+    with open(cache_dir / "dgraph.json", "w") as f:
+        f.write(dumps(dgraph))
+
+
 def save_asset_cache() -> None:
     with open(picomet_dir / ("build" if BUILD else "cache") / "assets.json", "w") as f:
         f.write(dumps(asset_cache))
@@ -312,8 +317,7 @@ class CometParser(BaseHTMLParser):
             ast_cache[id] = self.ast
             if not BUILD:
                 save_commet(id, self.ast, cache_dir / "comets")
-                with open(cache_dir / "dgraph.json", "w") as f:
-                    f.write(dumps(dgraph))
+                save_dgraph()
         else:
             self.ast = cached
 

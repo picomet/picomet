@@ -194,8 +194,11 @@ def compile_file(path: str) -> None:
         def update(p: str) -> None:
             for d in dmap.get(p, []):
                 if not fcache.get(d):
-                    with open(d) as f:
-                        cache_file(d, f.read())
+                    if os.path.exists(d):
+                        with open(d) as f:
+                            cache_file(d, f.read())
+                    else:
+                        return
                 parser = CometParser()
                 parser.feed(fcache[d], d, use_cache=False)
                 update(d)
