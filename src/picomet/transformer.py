@@ -6,6 +6,7 @@ from typing import Any, Literal, NotRequired, TypedDict, Unpack, cast
 
 from django.conf import settings
 from django.template.backends.django import Template
+from django.utils.safestring import SafeString
 
 from picomet.parser import STATIC_URL, asset_cache
 from picomet.types import (
@@ -209,7 +210,11 @@ class Transformer:
                 self.current["childrens"].append(node)
             return None
         elif isinstance(node, StrCode):
-            string = escape(str(eval(node.code, self.context)), quote=False)
+            e = eval(node.code, self.context)
+            if isinstance(e, SafeString):
+                string = e
+            else:
+                string = escape(str(e), quote=False)
             if self.c_target:
                 self.partials[self.c_target]["html"] += string
             else:

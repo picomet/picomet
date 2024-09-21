@@ -580,3 +580,44 @@ To pass any data from the server context dictionary to the javascript context, u
 
 .. important::
   The ``server`` attribute is required to know if the alpine directives inside a block should be rendered on the server. The ``client`` attribute can be used inside a ``server`` block to exclude a block from being rendered on the server.
+
+
+Builtins
+--------
+
+Picomet provides some helpful builtins to use inside templates.
+
+safe
+~~~~
+
+Mark a string as safe for use in HTML.
+
+.. code-block:: html
+
+  <div>
+    <span>{$ safe(blog.content) $}</span>
+    or
+    <span s-text="safe(blog.content)"></span>
+  </div>
+
+csrf_token
+~~~~~~~~~~
+
+Get the CSRF input.
+
+.. code-block:: django
+
+  <form>
+    {% csrf_token %}
+  </form>
+
+csrf_input
+~~~~~~~~~~
+
+Get the CSRF input value.
+
+.. code-block:: html
+
+  <form>
+    <input type="hidden" name="csrf_token" s-bind:value="csrf_input()" />
+  </form>

@@ -10,6 +10,7 @@ from django.template.base import UNKNOWN_SOURCE
 from django.template.engine import Engine
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
+from django.utils.safestring import mark_safe
 
 from picomet.parser import CometParser
 from picomet.transformer import Transformer
@@ -111,6 +112,7 @@ class Renderer:
             context["csrf_token"] = csrf_token_lazy(request)
             for context_processor in self.backend.engine.imported_context_processors:
                 context.update(context_processor(request))
+            context["safe"] = mark_safe
         return self.template.render(
             context,
             request.targets,
