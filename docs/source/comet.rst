@@ -542,6 +542,71 @@ For tailwind to work, picomet requires 3 files.
     plugins: [tailwindcss],
   };
 
+Comet.js
+--------
+
+The ``picomet/comet.js`` module provides comet templates it's client side routing and partial updating capabilities.
+
+It also provides some functions to help you update you comets templates.
+
+go
+~~~
+
+Use this function to navigate to a page
+
+.. code-block:: typescript
+
+  go(path: string, scrollToTop?: boolean): Promise<void>
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Default
+     - Description
+   * - path: string
+     -
+     - Path to navigate to
+   * - scrollToTop?: boolean
+     - false
+     - Whether to scroll to the top of the page
+
+update
+~~~~~~
+
+Use this function to partially update a page
+
+.. code-block:: typescript
+
+  update(
+    targets: string[],
+    url?: string,
+    scrollToTop?: boolean
+  ): Promise<void>
+
+.. list-table::
+   :header-rows: 1
+
+   * - Parameter
+     - Default
+     - Description
+   * - targets: string[]
+     -
+     - Targets list
+   * - url?: string
+     - location.toString()
+     - Url to navigate to
+   * - scrollToTop?: boolean
+     - false
+     - Whether to scroll to the top of the page
+
+call
+~~~~
+
+Use this function to call an action
+
+Learn more about ``call`` and ``actions`` in the :doc:`/action` guide.
+
 
 Alpine SSR
 ----------

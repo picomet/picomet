@@ -217,6 +217,13 @@ export async function update(
   return await handleResponse(response, scrollToTop);
 }
 
+export function go(path: string, scrollToTop?: boolean) {
+  const url = new URL(window.location.toString());
+  url.pathname = path;
+  scrollToTop = scrollToTop == null ? true : scrollToTop;
+  return update(["&page"], url.toString(), scrollToTop);
+}
+
 function handleNavigate() {
   Alpine.store("previousUrl", location.href);
 }
