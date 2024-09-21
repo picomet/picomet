@@ -1,2 +1,3 @@
 recursive-include src/picomet/template *
 recursive-include src/picomet/assets *
+include src/picomet/tailwind.js
