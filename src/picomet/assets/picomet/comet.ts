@@ -218,10 +218,15 @@ export async function update(
 }
 
 export function go(path: string, scrollToTop?: boolean) {
-  const url = new URL(window.location.toString());
-  url.pathname = path;
+  const url = new URL(path, window.location.origin);
   scrollToTop = scrollToTop == null ? true : scrollToTop;
-  return update(["&page"], url.toString(), scrollToTop);
+  update(["&page"], url.toString(), scrollToTop)
+    .then((data) => {
+      if (!("redirect" in data)) {
+        history.pushState({}, "", url.toString());
+      }
+    })
+    .catch(() => {});
 }
 
 function handleNavigate() {
