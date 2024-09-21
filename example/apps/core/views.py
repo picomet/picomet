@@ -82,7 +82,7 @@ def new(request: HttpRequest):
         if form.is_valid():
             blog = form.save()
             return PicometResponseRedirect(
-                reverse("core:blog", kwargs={"slug": blog.slug})
+                request, reverse("core:blog", kwargs={"slug": blog.slug})
             )
     context["form"] = form
     return render(request, context)

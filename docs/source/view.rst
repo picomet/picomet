@@ -55,6 +55,8 @@ class ``picomet.http.PicometResponseRedirect``
 
    * - Parameter
      - Description
+   * - request: HttpRequest
+     - HttpRequest object
    * - redirect_to: str
      - Path to redirect
    * - update: bool = True
@@ -69,13 +71,24 @@ class ``picomet.http.PicometResponseRedirect``
   from django.contrib.auth.forms import UserCreationForm
   from picomet.http import PicometResponseRedirect
 
+  from core.models import Blog
+
   @template("Index")
   def index(request):
+      context = {}
+      form = UserCreationForm()
       if request.method == "POST" and not request.action:
         form = UserCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            return PicometResponseRedirect("/acount")
+            return PicometResponseRedirect(request, "/account")
+      context["form"] = form
+      return render(request, context)
 
-.. note::
-  ``PicometResponseRedirect`` can only be returned when ``request.targets`` has any targets or ``request.action`` exists.
+  @template("pages/Blog")
+  def blog(request, slug):
+      blogs = Blog.objects.filter(slug=slug)
+      if blogs.exists():
+          context = {"blog": blogs.first()}
+          return render(request, context)
+      return PicometResponseRedirect(request, "/blogs")

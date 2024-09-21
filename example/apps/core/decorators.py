@@ -18,11 +18,12 @@ def normaluser_required(function):
         if request.targets:
             if request.path == furl(REFERER).path:
                 return PicometResponseRedirect(
+                    request,
                     reverse("core:home"),
                     headers={"Targets": json.dumps(request.targets)},
                 )
             return PicometResponseRedirect(
-                furl(REFERER).set({"v": "login"}).url, update=False
+                request, furl(REFERER).set({"v": "login"}).url, update=False
             )
         return HttpResponseRedirect(
             furl(REFERER or reverse("core:home")).set({"v": "login"}).url

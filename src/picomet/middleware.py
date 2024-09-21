@@ -20,7 +20,7 @@ class CommonMiddleware:
             if request.method != "GET":
                 call_action(request)
         except ActionRedirect as e:
-            return PicometResponseRedirect(e.args[0], e.args[1])
+            return PicometResponseRedirect(request, e.args[0], e.args[1])
 
         response = self.get_response(request)
 
