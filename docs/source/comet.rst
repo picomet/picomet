@@ -34,7 +34,9 @@ A ``Layout`` is used by a page
       <Helmet>
         <title>About</title>
       </Helmet>
-      <h1>This is the about page</h1>
+      <main>
+        <h1>This is the about page</h1>
+      </main>
     </div>
   </Layout>
 
