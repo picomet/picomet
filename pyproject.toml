@@ -6,7 +6,7 @@ license = { file = "LICENSE" }
 description = "The nextjs of django"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = ["django>=4.2"]
 classifiers = [
   "Environment :: Web Environment",
   "Intended Audience :: Developers",

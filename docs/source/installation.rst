@@ -32,11 +32,11 @@ Activate the virtual environment
 
 
 **4.**
-Install `picomet <https://pypi.org/project/picomet>`_ , `copier <https://pypi.org/project/copier>`_ and `django <https://pypi.org/project/django>`_
+Install `picomet <https://pypi.org/project/picomet>`_ and `copier <https://pypi.org/project/copier>`_
 
 .. code-block:: shell
 
-  pip install picomet copier django
+  pip install picomet copier
 
 **5.**
 Generate the project
