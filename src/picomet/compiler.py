@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
 from django.apps import apps
 from django.conf import settings
 from django.template import engines
@@ -30,6 +29,11 @@ from picomet.parser import (
     twlayouts,
 )
 from picomet.utils import mdhash
+
+try:
+    from channels.layers import get_channel_layer
+except ImportError:
+    pass
 
 BASE_DIR: Path = settings.BASE_DIR
 picomet_dir = BASE_DIR / ".picomet"
