@@ -199,7 +199,7 @@ def save_asset_cache() -> None:
         f.write(dumps(asset_cache))
 
 
-def save_commet(id: str, ast: Ast, dest: Path) -> None:
+def save_commet(id: str, ast: Ast, folder: Path) -> None:
     _ast = deepcopy(ast)
 
     def process(node: AstElement) -> None:
@@ -225,7 +225,13 @@ def save_commet(id: str, ast: Ast, dest: Path) -> None:
                     process(children)
 
     process(_ast)
-    with (dest / f"{mdhash(id,8)}.json").open("w") as f:
+
+    if Path(id).is_relative_to(BASE_DIR):
+        rel = Path(id).relative_to(BASE_DIR).as_posix()
+        dest = folder / f"{mdhash(rel,8)}.json"
+    else:
+        dest = folder / f"{mdhash(id,8)}.json"
+    with dest.open("w") as f:
 
         class AstEncoder(JSONEncoder):
             def default(self, obj: Any) -> Any:
@@ -242,10 +248,14 @@ def save_commet(id: str, ast: Ast, dest: Path) -> None:
         f.write(dumps(_ast, cls=AstEncoder))
 
 
-def load_comet(id: str, source: Path) -> None:
-    comet = source / f"{mdhash(id,8)}.json"
-    if comet.exists():
-        with comet.open() as f:
+def load_comet(id: str, folder: Path) -> None:
+    if Path(id).is_relative_to(BASE_DIR):
+        rel = Path(id).relative_to(BASE_DIR).as_posix()
+        source = folder / f"{mdhash(rel,8)}.json"
+    else:
+        source = folder / f"{mdhash(id,8)}.json"
+    if source.exists():
+        with source.open() as f:
 
             def ast_decoder(_dict: dict) -> dict | StrCode | Template:
                 if _dict.get("StrCode"):
