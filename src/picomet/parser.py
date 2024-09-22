@@ -137,7 +137,8 @@ class BaseHTMLParser(HTMLParser):
         return gtpos
 
 
-trim_re = re.compile(r"(^(\s|\n|\t)+|(\s|\n|\t)+$)")
+ltrim_re = re.compile(r"^(\s|\n|\t)+")
+rtrim_re = re.compile(r"(\s|\n|\t)+$")
 
 x_re = re.compile(
     r"(?:(?:({\$)\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*\$})|(({{)\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*}})|({%\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*%}))"
@@ -223,6 +224,14 @@ def save_commet(id: str, ast: Ast, folder: Path) -> None:
                                 ],
                             }
                     process(children)
+                elif isinstance(children, str):
+                    if not settings.DEBUG and node["tag"] != "pre":
+                        clean = children
+                        if index == 0:
+                            clean = re.sub(ltrim_re, "", clean)
+                        if index == (len(node["childrens"]) - 1):
+                            clean = re.sub(rtrim_re, "", clean)
+                        node["childrens"][index] = clean
 
     process(_ast)
 
@@ -568,8 +577,6 @@ class CometParser(BaseHTMLParser):
 
     @handle_addition
     def handle_data(self, data: str) -> None:
-        if not settings.DEBUG and self.current["tag"] != "pre":
-            data = re.sub(trim_re, "", data)
         matches = list(re.finditer(x_re, data))
         if len(matches):
             previous = None
