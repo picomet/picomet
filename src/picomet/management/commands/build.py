@@ -18,6 +18,15 @@ BASE_DIR: Path = settings.BASE_DIR
 class Command(BaseCommand):
     help = "Build picomet for production"
 
+    def add_arguments(self, parser: Any) -> None:
+        parser.add_argument(
+            "--verbose",
+            action="store_true",
+            default=False,
+            dest="verbose",
+            help="Verbose mode",
+        )
+
     def handle(self, *args: list[Any], **options: dict[str, Any]) -> None:
         start = timeit.default_timer()
         settings.DEBUG = False
@@ -36,6 +45,12 @@ class Command(BaseCommand):
 
         save_patterns(get_resolver().url_patterns)
         self.stdout.write(f"✓ built in {round(timeit.default_timer() - start, 2)}s")
+        if options["verbose"]:
+            self.stdout.write(f"✓ location: {build_dir}")
+            assets = len(list(build_assets_dir.glob("*")))
+            self.stdout.write(f"✓ assets: {assets}")
+            comets = len(list(build_commets_dir.glob("*")))
+            self.stdout.write(f"✓ comets: {comets}")
 
 
 def save_patterns(url_patterns: list[URLResolver | URLPattern]) -> None:
