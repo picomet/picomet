@@ -18,6 +18,7 @@ from django.template import engines, loader
 from django.template.backends.django import Template
 from django.utils.html import escape
 
+from picomet.helpers import get_comet_id
 from picomet.types import (
     Ast,
     AstAttrs,
@@ -200,7 +201,7 @@ def save_asset_cache() -> None:
         f.write(dumps(asset_cache))
 
 
-def save_commet(id: str, ast: Ast, folder: Path) -> None:
+def save_commet(path: str, ast: Ast, folder: Path) -> None:
     _ast = deepcopy(ast)
 
     def process(node: AstElement) -> None:
@@ -235,11 +236,7 @@ def save_commet(id: str, ast: Ast, folder: Path) -> None:
 
     process(_ast)
 
-    if Path(id).is_relative_to(BASE_DIR):
-        rel = Path(id).relative_to(BASE_DIR).as_posix()
-        dest = folder / f"{mdhash(rel,8)}.json"
-    else:
-        dest = folder / f"{mdhash(id,8)}.json"
+    dest = folder / f"{get_comet_id(path)}.json"
     with dest.open("w") as f:
 
         class AstEncoder(JSONEncoder):
@@ -257,12 +254,8 @@ def save_commet(id: str, ast: Ast, folder: Path) -> None:
         f.write(dumps(_ast, cls=AstEncoder))
 
 
-def load_comet(id: str, folder: Path) -> None:
-    if Path(id).is_relative_to(BASE_DIR):
-        rel = Path(id).relative_to(BASE_DIR).as_posix()
-        source = folder / f"{mdhash(rel,8)}.json"
-    else:
-        source = folder / f"{mdhash(id,8)}.json"
+def load_comet(path: str, folder: Path) -> None:
+    source = folder / f"{get_comet_id(path)}.json"
     if source.exists():
         with source.open() as f:
 
@@ -273,7 +266,7 @@ def load_comet(id: str, folder: Path) -> None:
                     return django_engine.from_string(_dict["string"])
                 return _dict
 
-            ast_cache[id] = loads(f.read(), object_hook=ast_decoder)
+            ast_cache[path] = loads(f.read(), object_hook=ast_decoder)
 
 
 class Map(TypedDict):

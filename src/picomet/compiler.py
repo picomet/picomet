@@ -17,6 +17,7 @@ from django.urls import URLPattern, URLResolver, get_resolver
 from django.urls.resolvers import RoutePattern
 
 from picomet.backends.picomet import Renderer
+from picomet.helpers import get_comet_id
 from picomet.loaders import cache_file, fcache, fhash
 from picomet.parser import (
     ASSETFILES_DIRS,
@@ -190,7 +191,10 @@ def is_file_changed(path: str) -> bool:
 def compile_file(path: str) -> None:
     _, ext = os.path.splitext(path)
 
-    if ext == ".html" and (cache_dir / f"comets/{mdhash(path,8)}.json").exists():
+    if (
+        ext == ".html"
+        and (cache_dir / "comets" / f"{get_comet_id(path)}.json").exists()
+    ):
         parser = CometParser()
         parser.feed(fcache[path], path, use_cache=False)
         dmap = deepcopy(dgraph)
