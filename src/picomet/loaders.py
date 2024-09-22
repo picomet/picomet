@@ -15,7 +15,7 @@ from django.utils._os import safe_join
 from picomet.backends.picomet import Template
 from picomet.utils import mdhash
 
-TEST = sys.argv[1] == "test"
+TEST = len(sys.argv) > 1 and sys.argv[1] == "test"
 
 BASE_DIR: Path = settings.BASE_DIR
 
@@ -23,7 +23,7 @@ cache_dir = BASE_DIR / ".picomet/cache"
 
 fcache: dict[str, str] = {}
 fhash: dict[str, str] = {}
-if sys.argv[1] == "runserver":
+if len(sys.argv) > 1 and sys.argv[1] == "runserver":
     try:
         with open(cache_dir / "fhash.json") as f:
             fhash = loads(f.read())
@@ -33,7 +33,7 @@ if sys.argv[1] == "runserver":
 
 def cache_file(path: str, content: str) -> None:
     fcache[path] = content
-    if sys.argv[1] != "build":
+    if len(sys.argv) <= 1 or sys.argv[1] != "build":
         fhash[path] = mdhash(fcache[path], 8)
         with open(cache_dir / "fhash.json", "w") as f:
             f.write(dumps(fhash))

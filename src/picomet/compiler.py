@@ -41,7 +41,7 @@ cache_dir = picomet_dir / "cache"
 
 
 def setup() -> None:
-    if sys.argv[1] == "runserver":
+    if len(sys.argv) > 1 and sys.argv[1] == "runserver":
 
         def watch(path: str) -> None:
             from watchdog.events import FileSystemEvent, FileSystemEventHandler

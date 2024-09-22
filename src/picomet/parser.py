@@ -143,11 +143,11 @@ x_re = re.compile(
     r"(?:(?:({\$)\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*\$})|(({{)\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*}})|({%\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*%}))"
 )
 
-BUILD = sys.argv[1] == "build"
-COLLECTSTATIC = sys.argv[1] == "collectstatic"
-RUNSERVER = sys.argv[1] == "runserver"
-TEST = sys.argv[1] == "test"
-RECOMPILE = sys.argv[1] == "recompile"
+BUILD = len(sys.argv) > 1 and sys.argv[1] == "build"
+COLLECTSTATIC = len(sys.argv) > 1 and sys.argv[1] == "collectstatic"
+RUNSERVER = len(sys.argv) > 1 and sys.argv[1] == "runserver"
+TEST = len(sys.argv) > 1 and sys.argv[1] == "test"
+RECOMPILE = len(sys.argv) > 1 and sys.argv[1] == "recompile"
 
 BASE_DIR: Path = settings.BASE_DIR
 STATIC_URL = getattr(settings, "STATIC_URL", "/static/")
