@@ -26,7 +26,7 @@ A ``Layout`` is used by a page
   </html>
 
 .. code-block:: text
-  :emphasize-lines: 2,9
+  :emphasize-lines: 2,11
 
   <!-- apps/core/comets/pages/About.html -->
   <Layout @="Base">
