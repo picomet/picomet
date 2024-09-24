@@ -17,7 +17,7 @@ from django.urls import URLPattern, URLResolver, get_resolver
 from django.urls.resolvers import RoutePattern
 
 from picomet.backends.picomet import Renderer
-from picomet.helpers import get_comet_id
+from picomet.helpers import get_comet_id, read_source
 from picomet.loaders import cache_file, fcache, fhash
 from picomet.parser import (
     ASSETFILES_DIRS,
@@ -25,6 +25,7 @@ from picomet.parser import (
     CometParser,
     asset_cache,
     compile_asset,
+    compile_resouce,
     compile_tailwind,
     dgraph,
     twlayouts,
@@ -98,11 +99,10 @@ def setup() -> None:
             def validate_cache() -> None:
                 for file in fhash:
                     if Path(file).exists():
-                        with open(file) as f:
-                            content = f.read()
-                            if mdhash(content, 8) != fhash[file]:
-                                cache_file(file, content)
-                                compile_file(file)
+                        content = read_source(file)
+                        if mdhash(content, 8) != fhash[file]:
+                            cache_file(file, content)
+                            compile_file(file)
 
             thread = threading.Thread(target=validate_cache, daemon=True)
             thread.start()
@@ -174,18 +174,15 @@ def parse_patterns(url_patterns: list[URLResolver | URLPattern]) -> None:
 
 
 def is_file_changed(path: str) -> bool:
-    with open(path) as f:
-        content = f.read()
-        cached = fhash.get(path)
-        if cached:
-            changed = mdhash(content, 8) != cached
-            fcache[path] = content
-            fhash[path] = mdhash(content, 8)
-            return changed
-        else:
-            fcache[path] = content
-            fhash[path] = mdhash(content, 8)
-            return True
+    content = read_source(path)
+    cached = fhash.get(path)
+    if cached:
+        changed = mdhash(content, 8) != cached
+        cache_file(path, content)
+        return changed
+    else:
+        cache_file(path, content)
+        return True
 
 
 def compile_file(path: str) -> None:
@@ -277,7 +274,7 @@ def compile_file(path: str) -> None:
                     }
                 )
     elif dgraph.get(path):
-        compile_asset(path)
+        compile_resouce(path)
         hmr_send_message(
             {
                 "staticUrl": STATIC_URL,

@@ -1,3 +1,4 @@
+import base64
 import os
 import re
 import sys
@@ -626,11 +627,11 @@ class CometParser(BaseHTMLParser):
                         self.add_dep(asset, self.id)
                         attributes += [
                             (k, edq(asset)),
-                            ("data-asset-id", edq(compile_asset(asset))),
+                            ("data-asset-id", edq(compile_resouce(asset))),
                             ("data-target", edq(k.split(":")[1])),
                         ]
                     else:
-                        compile_asset(asset)
+                        compile_resouce(asset)
                         attributes += [
                             (
                                 k.split(":")[1],
@@ -818,6 +819,26 @@ def compile_asset(path: str) -> str:
         f.write(compiled)
     save_asset_cache()
 
+    return id
+
+
+def compile_resouce(path: str) -> str:
+    from picomet.loaders import cache_file, fcache
+
+    if not fcache.get(path):
+        with open(path, "rb") as f:
+            cache_file(path, base64.b64encode(f.read()).decode("utf-8"))
+    name, ext = os.path.splitext(os.path.basename(path))
+    compiled = fcache[path]
+    id = f"{name}-{mdhash(path,6)}"
+    fname = f"{id}.{mdhash(compiled,6)}{ext}"
+    asset_cache[path] = (fname, compiled)
+    for file in glob(str(assets_dir / f"{id}.*{ext}")):
+        if os.path.exists(str(file)):
+            os.remove(str(file))
+    with open(assets_dir / fname, "wb") as f:
+        f.write(base64.b64decode(compiled))
+    save_asset_cache()
     return id
 
 
