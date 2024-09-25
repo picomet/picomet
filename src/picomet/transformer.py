@@ -252,7 +252,7 @@ class Transformer:
                     if isNodeWithChildrens(node):
                         self.current["childrens"].append(
                             {
-                                "tag": "Fragment",
+                                "tag": tag,
                                 "attrs": [("hidden", None)],
                                 "childrens": [],
                                 "parent": self.current,
@@ -261,7 +261,7 @@ class Transformer:
                     else:
                         self.current["childrens"].append(
                             {
-                                "tag": "Fragment",
+                                "tag": tag,
                                 "attrs": [("hidden", None)],
                                 "parent": self.current,
                             }
