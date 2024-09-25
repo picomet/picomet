@@ -295,6 +295,8 @@ def handle_addition(func: Callable[..., R]) -> Callable[..., R]:
     def wrapper(self: "CometParser", *args: list[Any]) -> None:
         if self.in_debug and not settings.DEBUG:
             return
+        if self.in_pro and settings.DEBUG:
+            return
         if self.is_page and not self.in_layout:
             return
         func(self, *args)
@@ -320,6 +322,7 @@ class CometParser(BaseHTMLParser):
         self.is_page: bool = False
         self.in_layout: bool = False
         self.in_debug: bool = False
+        self.in_pro: bool = False
         self.id: str = ""
 
     @override  # type: ignore
@@ -351,6 +354,8 @@ class CometParser(BaseHTMLParser):
         element: ElementDoubleTag
         if tag == "Debug":
             self.in_debug = True
+        elif tag == "Pro":
+            self.in_pro = True
         elif (
             tag == "Layout"
             and self.current is self.ast
@@ -558,6 +563,12 @@ class CometParser(BaseHTMLParser):
                 self.in_debug = False
                 return
             elif not settings.DEBUG:
+                return
+        if self.in_pro:
+            if tag == "Pro":
+                self.in_pro = False
+                return
+            elif settings.DEBUG:
                 return
 
         if tag == "Layout":

@@ -491,6 +491,16 @@ Contents inside the ``Debug`` tag will only be parsed when ``Debug=True`` in ``s
     <Js @="picomet/hmr.js" />
   </Debug>
 
+Pro
+---
+
+Contents inside the ``Pro`` tag will only be parsed when ``Debug=False`` in ``settings``.
+
+.. code-block:: text
+
+  <Pro>
+    <Js @="analytics.js" />
+  </Pro>
 
 Tailwind
 --------
