@@ -267,7 +267,18 @@ def load_comet(path: str, folder: Path) -> None:
                     return django_engine.from_string(_dict["string"])
                 return _dict
 
-            ast_cache[path] = loads(f.read(), object_hook=ast_decoder)
+            ast = loads(f.read(), object_hook=ast_decoder)
+
+            def process(node: AstElement) -> None:
+                if isNodeWithChildrens(node):
+                    for children in node["childrens"]:
+                        if isNodeElement(children):
+                            children["parent"] = node  # type: ignore
+                            process(children)
+
+            process(ast)
+
+            ast_cache[path] = ast
 
 
 class Map(TypedDict):
