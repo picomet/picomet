@@ -146,7 +146,6 @@ document.addEventListener("alpine:init", () => {
             body: body,
             headers: {
               Targets: JSON.stringify([getFullXPath(el)]),
-              "X-CSRFToken": getCookie("csrftoken"),
             },
           })
             .then((response) => {

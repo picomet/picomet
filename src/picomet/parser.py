@@ -603,7 +603,7 @@ class CometParser(BaseHTMLParser):
                 groups = [group for group in (match.groups()) if group is not None]
                 if groups[0] == "{$":
                     self.current["childrens"].append(StrCode(groups[1], self.id))
-                elif groups[1] == "{{" or groups[1] == "{%":
+                elif groups[0].startswith("{{") or groups[0].startswith("{%"):
                     self.current["childrens"].append(
                         django_engine.from_string(groups[0])
                     )
