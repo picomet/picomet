@@ -311,15 +311,17 @@ Import any asset from ``app/assets`` or :ref:`ASSETFILES_DIRS <assetfiles_dirs>`
   <img s-asset:src="images/icon.png" />
 
 
-Attribute
+Directive
 ---------
 
 s-bind:
 ~~~~~~~
 
+Bind data to an attribute
+
 .. code-block:: html
 
-  <a s-bind:href="blog.slug">{$ blog.title $}</a>
+  <a s-bind:href="blog.slug" x-link>{$ blog.title $}</a>
 
 s-toggle:
 ~~~~~~~~~
@@ -362,7 +364,6 @@ Using the component
   or
   <Import.Counter @="Counter" />
   <Counter />
-
 
 Children
 ~~~~~~~~
@@ -492,6 +493,7 @@ Contents inside the ``Debug`` tag will only be parsed when ``Debug=True`` in ``s
     <Js @="picomet/hmr.js" />
   </Debug>
 
+
 Pro
 ---
 
@@ -502,6 +504,7 @@ Contents inside the ``Pro`` tag will only be parsed when ``Debug=False`` in ``se
   <Pro>
     <Js @="analytics.js" />
   </Pro>
+
 
 Tailwind
 --------
@@ -554,6 +557,7 @@ For tailwind to work, picomet requires 3 files.
   module.exports = {
     plugins: [tailwindcss],
   };
+
 
 Comet.js
 --------
@@ -631,7 +635,6 @@ The cool thing about picomet is it's ability to render alpine.js on the server
 
 .. important::
   To render Alpine.js syntax on the server Picomet requires `py-mini-racer <https://pypi.org/project/py-mini-racer>`_. Run ``pip install py-mini-racer``
-
 
 s-prop
 ~~~~~~
