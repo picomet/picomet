@@ -10,7 +10,7 @@ Install the production requirements
 
   pip install -r requirements.txt
 
-If using Tailwind
+If using Tailwind, TypeScript or Sass etc.
 
 .. code-block:: bash
 
@@ -24,6 +24,7 @@ To compile for production, run
 
 .. code-block:: bash
 
+  export NODE_PATH=$(pwd)/node_modules
   python manage.py build
 
 
@@ -40,9 +41,11 @@ Collect asset files and static files in the `STATIC_ROOT <https://docs.djangopro
 Serve statics
 ~~~~~~~~~~~~~
 
-Configure the production server to serve the collected files inside `STATIC_ROOT <https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STATIC_ROOT>`_ folder under the URL `STATIC_URL <https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STATIC_URL>`_.
+Configure the production server to serve the collected static files in the `STATIC_ROOT <https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STATIC_ROOT>`_ folder under the `STATIC_URL <https://docs.djangoproject.com/en/stable/ref/settings/#std-setting-STATIC_URL>`_.
 
 See `How to deploy static files <https://docs.djangoproject.com/en/stable/howto/static-files/deployment/>`_ guide to learn more.
+
+Or you can use `WhiteNoise <https://whitenoise.readthedocs.io/en/stable/>`_ to automatically serve static files.
 
 
 Start server
