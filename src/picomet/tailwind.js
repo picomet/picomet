@@ -13,6 +13,7 @@ const path = require("path");
  * @param {string} destDir
  * @param {string} id
  * @param {string[]} content
+ * @param {boolean} DEBUG
  * @returns {string[]}
  */
 async function compile(
@@ -22,6 +23,7 @@ async function compile(
   destDir,
   id,
   content,
+  DEBUG,
 ) {
   const css = fs.readFileSync(inputCss);
   const twConfig = require(tailwindConf);
@@ -34,6 +36,16 @@ async function compile(
     ) {
       plugins[plugin] = require("tailwindcss")(twConfig);
     }
+  }
+  if (!DEBUG) {
+    try {
+      plugins.push(
+        require("cssnano")({
+          preset: "default",
+        }),
+      );
+      // eslint-disable-next-line no-empty
+    } catch (e) {}
   }
   const result = await postcss(plugins).process(css, { from: undefined });
   const hash = crypto

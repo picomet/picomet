@@ -152,6 +152,7 @@ RUNSERVER = len(sys.argv) > 1 and sys.argv[1] == "runserver"
 TEST = len(sys.argv) > 1 and sys.argv[1] == "test"
 RECOMPILE = len(sys.argv) > 1 and sys.argv[1] == "recompile"
 
+DEBUG: bool = settings.DEBUG
 BASE_DIR: Path = settings.BASE_DIR
 STATIC_URL = getattr(settings, "STATIC_URL", "/static/")
 ASSETFILES_DIRS = getattr(settings, "ASSETFILES_DIRS", [])
@@ -895,6 +896,7 @@ def compile_tailwind(layout: str) -> None:
         assets_dir.as_posix(),
         f"{os.path.basename(source_id)}-{mdhash(layout,6)}",
         content,
+        DEBUG,
     )
     from picomet.loaders import cache_file
 
