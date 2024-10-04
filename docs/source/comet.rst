@@ -469,6 +469,10 @@ Loop
     No blogs found
   </div>
 
+To partially update a single item or something in that item, picomet requires ``s-of``, ``s-key`` and ``s-k`` attributes.
+
+See how to use ``s-of``, ``s-key`` and ``s-k`` in the :doc:`/action` guide.
+
 
 With
 ----

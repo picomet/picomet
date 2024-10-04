@@ -97,14 +97,14 @@ Create a Template and ``call`` the action from the client:
 
   <!-- apps/core/comets/Blogs.html -->
   <Layout @="Base">
-    <div s-for="blog" s-in="blogs">
-      <div>
+    <div s-for="blog" s-in="blogs" s-of="blogs.filter(id=key)" s-key="blog.id">
+      <div s-k>
         <h2>{$ blog.title $}</h2>
         <p>{$ blog.content $}</p>
         <span s-group="likes">likes ({$ blog.like_set.count() $})</span>
         <button
           s-bind:x-prop:blogId="blog.id"
-          @click="call('core.like_blog', {blog: blogId})"
+          @click="call('core.like_blog', {blog: blogId}, keys)"
         >
           like
         </button>
