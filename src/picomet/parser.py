@@ -696,7 +696,7 @@ class CometParser(BaseHTMLParser):
 
     def add_props(self, element: AstElement, props: AstAttrs) -> None:
         for index, attr in enumerate(element["attrs"]):
-            if attr[0] == "props":
+            if attr[0] == "s-props":
                 element["attrs"] = list(
                     list(element["attrs"])[:index]
                     + list(props)
