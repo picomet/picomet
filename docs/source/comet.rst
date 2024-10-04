@@ -532,7 +532,7 @@ Tailwind
   ``Tailwind`` requires `tailwindcss <https://npmjs.com/package/tailwindcss>`_ and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i tailwindcss`` and ``pip install javascript``
 
 .. note::
-  To minify the css on production, just just do ``npm i cssnano``
+  To minify the css on production, just do ``npm i cssnano``
 
 For tailwind to work, picomet requires 3 files.
 
