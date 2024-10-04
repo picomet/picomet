@@ -665,6 +665,20 @@ To pass any data from the server context dictionary to the javascript context, u
 .. important::
   The ``server`` attribute is required to know if the alpine directives inside a block should be rendered on the server. The ``client`` attribute can be used inside a ``server`` block to exclude a block from being rendered on the server.
 
+isServer
+~~~~~~~~
+
+Check if alpine is being rendered on server or client.
+
+.. code-block:: html
+
+  <div x-show="isServer">
+    <span>visible on server</span>
+  </div>
+  <div x-show="!isServer">
+    <span>visible on client</span>
+  </div>
+
 
 Builtins
 --------
