@@ -6,6 +6,7 @@
     <div class="flex items-center justify-center">
       <div class="w-11/12 md:max-w-md mx-auto">
         <form class="flex flex-col gap-1" method="post" x-form>
+          {% csrf_token %}
           <label for="settingsFullname" class="text-sm text-gray-600">
             Full name
           </label>
