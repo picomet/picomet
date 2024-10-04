@@ -567,7 +567,7 @@ Comet.js
 
 The ``picomet/comet.js`` module provides comet templates it's client side routing and partial updating capabilities.
 
-It also provides some functions to help you update you comets templates.
+It also provides some utility functions to help you update your pages.
 
 go
 ~~~
