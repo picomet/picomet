@@ -469,6 +469,8 @@ Loop
     No blogs found
   </div>
 
+Since django ORM querysets are lazy, we can fetch a single item from the database and render it on server then update it on client.
+
 To partially update a single item or something in that item, picomet requires ``s-of``, ``s-key`` and ``s-k`` attributes.
 
 See how to use ``s-of``, ``s-key`` and ``s-k`` in the :doc:`/action` guide.
