@@ -163,6 +163,10 @@ class Transformer:
                 sfor = None
 
                 if tag != "With" and tag != "Default":
+                    rtrn = self.handle_conditionals(node, xpath, previous)
+                    if rtrn != "continue":
+                        return rtrn
+
                     for attr in node["attrs"]:
                         k, v = attr
                         if k.startswith("s-prop:"):
@@ -238,51 +242,9 @@ class Transformer:
         sfor = None
 
         if tag != "With" and tag != "Default":
-            show = get_atrb(node, "s-show")
-            if isinstance(show, StrCode) and not eval(show.code, self.context):
-                if self.c_target:
-                    self.partials[self.c_target]["html"] += (
-                        f"<{tag} hidden></{tag}>"
-                        if node.get("childrens")
-                        else f"<{tag} hidden />"
-                    )
-                    if xpath == self.c_target and tag and (tag not in EXCLUDES):
-                        self.c_target = ""
-                else:
-                    if isNodeWithChildrens(node):
-                        self.current["childrens"].append(
-                            {
-                                "tag": tag,
-                                "attrs": [("hidden", None)],
-                                "childrens": [],
-                                "parent": self.current,
-                            }
-                        )
-                    else:
-                        self.current["childrens"].append(
-                            {
-                                "tag": tag,
-                                "attrs": [("hidden", None)],
-                                "parent": self.current,
-                            }
-                        )
-
-                return False
-            elif get_atrb(node, "s-if") and not eval(
-                cast(StrCode, get_atrb(node, "s-if")).code, self.context
-            ):
-                return False
-            elif get_atrb(node, "s-elif"):
-                if previous is True:
-                    return True
-                elif not eval(
-                    cast(StrCode, get_atrb(node, "s-elif")).code, self.context
-                ):
-                    return False
-            elif get_atrb(node, "s-else") is None and previous is True:
-                return None
-            elif get_atrb(node, "s-empty") is None and previous is True:
-                return None
+            rtrn = self.handle_conditionals(node, xpath, previous)
+            if rtrn != "continue":
+                return rtrn
 
             for attr in node["attrs"]:
                 k, v = attr
@@ -610,6 +572,59 @@ class Transformer:
                 children, _xpath, depth=depth, previous=previous, **kwargs
             )
             previous = _return if isinstance(children, dict) else previous
+
+    def handle_conditionals(
+        self, node: AstElement, xpath: str, previous: bool | None
+    ) -> bool | None | Literal["continue"]:
+        show = get_atrb(node, "s-show")
+        if isinstance(show, StrCode) and not eval(show.code, self.context):
+            self.add_placeholder(node, xpath)
+            return False
+        elif get_atrb(node, "s-if") and not eval(
+            cast(StrCode, get_atrb(node, "s-if")).code, self.context
+        ):
+            return False
+        elif get_atrb(node, "s-elif"):
+            if previous is True:
+                return True
+            elif not eval(cast(StrCode, get_atrb(node, "s-elif")).code, self.context):
+                return False
+        elif get_atrb(node, "s-else") is None and previous is True:
+            return None
+        elif get_atrb(node, "s-empty") is None and previous is True:
+            return None
+
+        return "continue"
+
+    def add_placeholder(self, node: AstElement, xpath: str) -> None:
+        tag = node["tag"]
+        if tag and (tag not in EXCLUDES):
+            if self.c_target:
+                self.partials[self.c_target]["html"] += (
+                    f"<{tag} hidden></{tag}>"
+                    if node.get("childrens")
+                    else f"<{tag} hidden />"
+                )
+                if xpath == self.c_target:
+                    self.c_target = ""
+            else:
+                if isNodeWithChildrens(node):
+                    self.current["childrens"].append(
+                        {
+                            "tag": tag,
+                            "attrs": [("hidden", None)],
+                            "childrens": [],
+                            "parent": self.current,
+                        }
+                    )
+                else:
+                    self.current["childrens"].append(
+                        {
+                            "tag": tag,
+                            "attrs": [("hidden", None)],
+                            "parent": self.current,
+                        }
+                    )
 
     def handle_sprop(
         self, k: str, v: AstAttrValue, attrs: EscapedAttrs | None, mode: Mode
