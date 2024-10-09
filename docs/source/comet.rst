@@ -473,6 +473,22 @@ To partially update a single item or something in that item, picomet requires ``
 
 See how to use ``s-of``, ``s-key`` and ``s-k`` in the :doc:`/action` guide.
 
+.. warning::
+  Do not use ``s-for`` in ``Fragment`` tag.
+
+
+Fragment
+--------
+
+Wrap multiple elements in a single conditional block.
+
+.. code-block:: html
+
+  <Fragment s-if="user.is_superuser">
+    <h2>hi</h2>,
+    <span>{$ user.username $}</span>
+  </Fragment>
+
 
 With
 ----
