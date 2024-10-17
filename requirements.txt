@@ -1,7 +1,4 @@
 -r example/requirements/dev.txt
-pre-commit==3.7.0
-mypy==1.11.2
-ruff==0.6.5
-typing-extensions==4.12.2
+-r requirements/check.txt
 -r docs/requirements.txt
 sphinx-autobuild==2024.2.4
