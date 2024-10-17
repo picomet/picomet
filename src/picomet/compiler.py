@@ -1,10 +1,13 @@
 import os
+import shutil
 import site
 import sys
 import threading
 import time
 from copy import deepcopy
+from importlib.metadata import version
 from itertools import chain
+from json import dumps, loads
 from pathlib import Path
 from typing import Any
 
@@ -79,32 +82,15 @@ def setup() -> None:
                 observer.stop()
             observer.join()
 
-        if not picomet_dir.is_dir():
-            picomet_dir.mkdir()
-        if not cache_dir.is_dir():
-            cache_dir.mkdir()
-
-            comets_dir = cache_dir / "comets"
-            assets_dir = cache_dir / "assets"
-            for folder in [comets_dir, assets_dir]:
-                if not folder.is_dir():
-                    folder.mkdir()
+        if not validate_cache():
+            reset_cache()
 
             parse_patterns(get_resolver().url_patterns)
 
             for layout in twlayouts:
                 compile_tailwind(layout)
         else:
-
-            def validate_cache() -> None:
-                for file in fhash:
-                    if Path(file).exists():
-                        content = read_source(file)
-                        if mdhash(content, 8) != fhash[file]:
-                            cache_file(file, content)
-                            compile_file(file)
-
-            thread = threading.Thread(target=validate_cache, daemon=True)
+            thread = threading.Thread(target=validate_fhash, daemon=True)
             thread.start()
 
         if settings.DEBUG:
@@ -281,6 +267,72 @@ def compile_file(path: str) -> None:
                 "link": asset_cache[path][0],
             }
         )
+
+
+def validate_cache() -> bool:
+    comets_dir = cache_dir / "comets"
+    assets_dir = cache_dir / "assets"
+    for folder in [picomet_dir, cache_dir, comets_dir, assets_dir]:
+        if not folder.is_dir():
+            return False
+
+    try:
+        with (cache_dir / "picomet.json").open() as f:
+            picomet = loads(f.read())
+            if picomet["version"] != version("picomet"):
+                return False
+    except Exception:
+        return False
+
+    assets_file = cache_dir / "assets.json"
+    dgraph_file = cache_dir / "dgraph.json"
+    fhash_file = cache_dir / "fhash.json"
+    for file in [assets_file, dgraph_file, fhash_file]:
+        if not file.is_file():
+            return False
+        else:
+            try:
+                with file.open() as f:
+                    loads(f.read())
+            except Exception:
+                return False
+    return True
+
+
+def reset_cache() -> None:
+    if not picomet_dir.is_dir():
+        picomet_dir.mkdir()
+    if cache_dir.is_dir():
+        shutil.rmtree(cache_dir)
+
+    comets_dir = cache_dir / "comets"
+    assets_dir = cache_dir / "assets"
+    for folder in [cache_dir, comets_dir, assets_dir]:
+        folder.mkdir()
+
+    picomet_file = cache_dir / "picomet.json"
+    with picomet_file.open("w") as f:
+        f.write(dumps({"version": version("picomet")}))
+
+    for cache in [fcache, fhash, asset_cache, dgraph, twlayouts]:
+        if isinstance(cache, dict):
+            cache.clear()
+
+    assets_file = cache_dir / "assets.json"
+    dgraph_file = cache_dir / "dgraph.json"
+    fhash_file = cache_dir / "fhash.json"
+    for file in [assets_file, dgraph_file, fhash_file]:
+        with file.open("w") as f:
+            f.write("{}")
+
+
+def validate_fhash() -> None:
+    for file in fhash:
+        if Path(file).exists():
+            content = read_source(file)
+            if mdhash(content, 8) != fhash[file]:
+                cache_file(file, content)
+                compile_file(file)
 
 
 def hmr_send_message(message: dict) -> None:
