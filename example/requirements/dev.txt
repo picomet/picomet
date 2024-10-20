@@ -1,4 +1,4 @@
 -r base.txt
-channels==4.0.0
-daphne==4.1.0
+channels==4.1.0
+daphne==4.1.2
 watchdog==4.0.0
