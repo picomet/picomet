@@ -452,7 +452,7 @@ Condition
     hi admin
   </div>
 
-.. warning:: Use ``s-show`` instead of ``s-if`` with ``s-group``. Learn more about ``s-group`` in the :doc:`/action` guide.
+.. warning:: Use ``s-show`` instead of ``s-if``, with ``s-group``. Learn more about ``s-group`` in the :doc:`/action` guide.
 
 
 Loop
