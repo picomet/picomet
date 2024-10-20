@@ -314,6 +314,26 @@ Import any asset from ``app/assets`` or :ref:`ASSETFILES_DIRS <assetfiles_dirs>`
 Directive
 ---------
 
+s-context
+~~~~~~~~~
+
+Set a context for a block
+
+.. code-block:: html
+
+  <div s-context="core.get_message">
+    <span>{$ message $}</span>
+  </div>
+
+.. code-block:: python
+
+  # apps/core/contexts.py
+
+  def get_message(context):
+      return {
+        "message": f"hi, {context['user'].username}",
+      }
+
 s-bind:
 ~~~~~~~
 

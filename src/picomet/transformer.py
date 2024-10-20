@@ -1,5 +1,6 @@
 from copy import copy, deepcopy
 from html import escape
+from importlib import import_module
 from json import dumps, loads
 from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict, Unpack, cast
@@ -162,6 +163,7 @@ class Transformer:
                     self.ctx = MiniRacer()
                 sfor = None
 
+                store: dict[str, Any] = {}
                 if tag != "With" and tag != "Default":
                     rtrn = self.handle_conditionals(node, xpath, previous)
                     if rtrn != "continue":
@@ -169,13 +171,14 @@ class Transformer:
 
                     for attr in node["attrs"]:
                         k, v = attr
-                        if k.startswith("s-prop:"):
+                        if k == "s-context":
+                            self.handle_scontext(v, store)
+                        elif k.startswith("s-prop:"):
                             self.handle_sprop(k, v, None, mode)
                         elif k == "x-data":
                             self.handle_xdata(v, mode)
                         elif k == "s-for":
                             sfor = v
-                store: dict[str, Any] = {}
                 if tag == "html" and self.ctx:
                     self.ctx.eval("var isServer = true;")
                 elif tag == "With":
@@ -241,6 +244,7 @@ class Transformer:
         text = None
         sfor = None
 
+        store = {}
         if tag != "With" and tag != "Default":
             rtrn = self.handle_conditionals(node, xpath, previous)
             if rtrn != "continue":
@@ -256,7 +260,9 @@ class Transformer:
 
             for attr in node["attrs"]:
                 k, v = attr
-                if k.startswith("s-prop:"):
+                if k == "s-context":
+                    self.handle_scontext(v, store)
+                elif k.startswith("s-prop:"):
                     self.handle_sprop(k, v, attrs, mode)
                 elif k == "x-data" and isAtrbEscaped(attr):
                     attrs.append(attr)
@@ -341,7 +347,6 @@ class Transformer:
                 elif k.startswith("x-") and isAtrbEscaped(attr):
                     attrs.append(attr)
 
-        store = {}
         if tag == "html" and self.ctx:
             self.ctx.eval("var isServer = true;")
             attrs.append(("x-data", "{isServer: false, keys: []}"))
@@ -572,6 +577,15 @@ class Transformer:
                 children, _xpath, depth=depth, previous=previous, **kwargs
             )
             previous = _return if isinstance(children, dict) else previous
+
+    def handle_scontext(self, v: AstAttrValue, store: dict[str, Any]) -> None:
+        context_module, context_name = str(v).split(".")
+        module = f"{context_module}.contexts"
+        contexts = import_module(module)
+        context = getattr(contexts, context_name)
+        for k, v in context(self.context).items():
+            store[k] = self.context.get(k)
+            self.context[k] = v
 
     def handle_conditionals(
         self, node: AstElement, xpath: str, previous: bool | None
