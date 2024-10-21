@@ -1,6 +1,6 @@
 {
   "eslint.validate": ["javascript", "typescript"],
-  "eslint.experimental.useFlatConfig": true,
+  "eslint.useFlatConfig": true,
   "javascript.validate.enable": false,
   "python.analysis.extraPaths": ["./example/apps/"],
   "python.analysis.autoImportCompletions": true,
