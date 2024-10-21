@@ -1,9 +1,10 @@
 {
   "recommendations": [
-    "almahdi.code-django",{% if Ruff %}
+    "almahdi.code-django",{% if Tailwind %},
+    "bradlc.vscode-tailwindcss"{% endif %}{% if Ruff %}
     "charliermarsh.ruff",{% endif %}
     "editorconfig.editorconfig"{% if Prettier %},
-    "esbenp.prettier-vscode"{% endif %}{% if Tailwind %},
-    "bradlc.vscode-tailwindcss"{% endif %}
+    "esbenp.prettier-vscode"{% endif %},
+    "picomet.alpinejs"
   ]
 }
