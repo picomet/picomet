@@ -1,6 +1,6 @@
 ASSR:
   type: bool
-  help: Alpine.js SSR
+  help: Alpinejs SSR
   default: no
 DB:
   type: str
