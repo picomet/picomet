@@ -1,6 +1,7 @@
 # Picomet
 
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/picomet)
+![PyPI - Python Versions](https://img.shields.io/pypi/pyversions/picomet)
+![PyPI - Django Versions](https://img.shields.io/pypi/djversions/picomet)
 [![PyPI - Version](https://img.shields.io/pypi/v/picomet)](https://pypi.org/project/picomet)
 ![PyPI - Downloads](https://img.shields.io/pypi/dw/picomet)
 ![GitHub](https://img.shields.io/github/license/picomet/picomet)
