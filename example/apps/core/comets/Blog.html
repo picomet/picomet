@@ -2,7 +2,7 @@
   <Helmet>
     <title>{$ blog.title $}</title>
   </Helmet>
-  <div class="container px-2 mx-auto my-2" s-group="blog">
+  <section class="container px-2 mx-auto my-2" s-group="blog">
     <div class="flex items-center">
       <h1 class="text-2xl">{{ blog.title }}</h1>
       <div
@@ -167,7 +167,7 @@
         s-of="blog.comment_set.filter(id=key)"
         s-key="comment.id"
       >
-        <div class="border rounded-md p-2 my-1" s-k>
+        <div class="border rounded-md p-2 my-1" s-keys>
           <div class="flex items-center gap-2">
             <a
               s-bind:href="f'/user/{comment.user.username}'"
@@ -203,5 +203,5 @@
         </div>
       </div>
     </div>
-  </div>
+  </section>
 </Layout>

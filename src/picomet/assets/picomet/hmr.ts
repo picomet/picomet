@@ -7,8 +7,8 @@ function connect() {
   HMR = new WebSocket(`ws://${location.host}/ws/hmr`);
   HMR.addEventListener("message", (event) => {
     if (typeof event.data == "string") {
-      interface LayoutChange {
-        layout: string;
+      interface BaseChange {
+        base: string;
       }
       interface TemplateChange {
         template: string;
@@ -29,13 +29,13 @@ function connect() {
         link: string;
       }
       const data = JSON.parse(event.data) as
-        | LayoutChange
+        | BaseChange
         | TemplateChange
         | StyleChange
         | TailwindChange
         | ScriptChange
         | LinkChange;
-      if ("layout" in data) {
+      if ("base" in data) {
         location.reload();
       } else if ("template" in data) {
         update([`$${data.template}`]).catch(() => {});

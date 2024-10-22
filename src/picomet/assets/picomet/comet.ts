@@ -17,37 +17,6 @@ export function getCookie(cookieName: string) {
   return "";
 }
 
-export function getFullXPath(element: Element) {
-  if (!(element instanceof Element)) return;
-  const path: string[] = [];
-  let currentNode = element;
-
-  while (currentNode !== document.documentElement) {
-    let count = 0;
-
-    for (const siblingNode of Array.from(currentNode.parentNode.children)) {
-      if (
-        siblingNode.nodeType === Node.ELEMENT_NODE &&
-        siblingNode.tagName === currentNode.tagName
-      ) {
-        count++;
-      }
-      if (siblingNode === currentNode) {
-        break;
-      }
-    }
-
-    const tagName = currentNode.tagName.toLowerCase();
-    path.unshift(`${tagName}[${count}]`);
-    const parentNode = currentNode.parentNode;
-    if (parentNode instanceof Element) {
-      currentNode = parentNode;
-    }
-  }
-  path.unshift("html[1]");
-  return `/${path.join("/")}`;
-}
-
 function getParamTargets(urlPrevious: string, urlNew: string) {
   const targets: string[] = [];
   const paramsPrevious = new URL(urlPrevious).searchParams;
@@ -145,7 +114,7 @@ document.addEventListener("alpine:init", () => {
             method: method,
             body: body,
             headers: {
-              Targets: JSON.stringify([getFullXPath(el)]),
+              Targets: JSON.stringify([el.getAttribute("marker")]),
             },
           })
             .then((response) => {
@@ -160,7 +129,7 @@ document.addEventListener("alpine:init", () => {
               actionUrl.searchParams.append(key, value);
             }
           });
-          update([getFullXPath(el)], actionUrl.toString())
+          update([el.getAttribute("marker")], actionUrl.toString())
             .then((data) => {
               if (!("redirect" in data)) {
                 history.pushState({}, "", actionUrl);
@@ -328,14 +297,8 @@ async function handleResponse(response: Response, scrollToTop?: boolean) {
     }
     for (const target in data) {
       const partial = data[target] as Partial;
-      const el = document.evaluate(
-        target,
-        document,
-        null,
-        XPathResult.FIRST_ORDERED_NODE_TYPE,
-        null,
-      ).singleNodeValue;
-      if (el instanceof Element) {
+      const markerStart = document.getElementById(`<${target}`);
+      if (markerStart instanceof Element) {
         for (const id in partial.css) {
           if (!document.querySelector(`[data-style-id="${id}"]`)) {
             const linkElement = document.createElement("link");
@@ -360,7 +323,19 @@ async function handleResponse(response: Response, scrollToTop?: boolean) {
               .catch(() => {});
           }
         }
-        el.outerHTML = partial.html;
+        requestAnimationFrame(() => {
+          let next = markerStart.nextSibling;
+          markerStart.remove();
+          while (next) {
+            if (next instanceof Element && next.id == `>${target}`) {
+              next.outerHTML = partial.html;
+              break;
+            } else {
+              next = next.nextSibling;
+              next.previousSibling.remove();
+            }
+          }
+        });
       }
     }
   }

@@ -26,22 +26,20 @@ A ``Layout`` is used by a page
   </html>
 
 .. code-block:: text
-  :emphasize-lines: 2,11
+  :emphasize-lines: 2,9
 
   <!-- apps/core/comets/pages/About.html -->
   <Layout @="Base">
-    <div>
-      <Helmet>
-        <title>About</title>
-      </Helmet>
-      <main>
-        <h1>This is the about page</h1>
-      </main>
-    </div>
+    <Helmet>
+      <title>About</title>
+    </Helmet>
+    <section>
+      <h1>This is the about page</h1>
+    </section>
   </Layout>
 
 .. warning::
-  The ``Layout`` tag must have one and only single html tag children.
+  Everything outside of ``Layout`` tag will be ignored.
 
 
 Variable
@@ -182,13 +180,14 @@ Put ``title`` and ``meta`` tags inside the ``head`` tag
 
   <!-- apps/core/comets/Home.html -->
   <Layout @="Base">
-    <div>
-      <Helmet>
-        <title>Home</title>
-        <meta name="title" content="..." />
-        <meta name="description" content="..." />
-      </Helmet>
-    <div>
+    <Helmet>
+      <title>Home</title>
+      <meta name="title" content="..." />
+      <meta name="description" content="..." />
+    </Helmet>
+    <section>
+      Home page
+    </section>
   </Layout>
 
 .. warning::
@@ -472,8 +471,6 @@ Condition
     hi admin
   </div>
 
-.. warning:: Use ``s-show`` instead of ``s-if``, with ``s-group``. Learn more about ``s-group`` in the :doc:`/action` guide.
-
 
 Loop
 ----
@@ -491,12 +488,9 @@ Loop
 
 Since django ORM querysets are lazy, we can fetch a single item from the database and render it on server then update it on client.
 
-To partially update a single item or something in that item, picomet requires ``s-of``, ``s-key`` and ``s-k`` attributes.
+To partially update a single item or something in that item, picomet requires ``s-of``, ``s-key`` and ``s-keys`` attributes.
 
-See how to use ``s-of``, ``s-key`` and ``s-k`` in the :doc:`/action` guide.
-
-.. warning::
-  Do not use ``s-for`` in ``Fragment`` tag.
+See how to use ``s-of``, ``s-key`` and ``s-keys`` in the :doc:`/action` guide.
 
 
 Fragment

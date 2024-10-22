@@ -11,6 +11,13 @@ from picomet.types import (
 )
 
 
+def has_atrb(attrs: list[tuple[str, Any]], names: list[str]) -> bool:
+    for k, v in attrs:
+        if k in names:
+            return True
+    return False
+
+
 def get_atrb(
     obj: ElementWithAttrs | AstAttrs | PureAttrs, name: str, default: str | bool = False
 ) -> DoubleQuoteEscapedStr | StrCode | None | str | bool:

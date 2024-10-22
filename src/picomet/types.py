@@ -58,6 +58,7 @@ class Ast(TypedDict):
     parent: ElementDoubleTag | None
     map: AstMap
     file: str
+    isBase: bool
 
 
 class ElementWithAttrs(TypedDict):

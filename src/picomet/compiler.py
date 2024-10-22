@@ -229,7 +229,7 @@ def compile_file(path: str) -> None:
 
             traverse(path)
 
-        hmr_send_message({"layout" if parser.is_layout else "template": path})
+        hmr_send_message({"base" if parser.is_base else "template": path})
     elif (ext == ".js" or ext == ".ts") and len(dgraph.get(path, [])):
         compile_asset(path)
         hmr_send_message(

@@ -298,7 +298,7 @@ def handle_addition(func: Callable[..., R]) -> Callable[..., R]:
             return
         if self.in_pro and settings.DEBUG:
             return
-        if self.is_page and not self.in_layout:
+        if self.using_layout and not self.in_layout:
             return
         func(self, *args)
 
@@ -315,12 +315,13 @@ class CometParser(BaseHTMLParser):
             "parent": None,
             "map": {"groups": {}, "params": {}, "files": {}},
             "file": "",
+            "isBase": False,
         }
         self.imports: dict[str, str] = {}
         self.loc: list[int] = []
         self.current: Ast | ElementDoubleTag = self.ast
-        self.is_layout: bool = False
-        self.is_page: bool = False
+        self.is_base: bool = False
+        self.using_layout: bool = False
         self.in_layout: bool = False
         self.in_debug: bool = False
         self.in_pro: bool = False
@@ -362,7 +363,7 @@ class CometParser(BaseHTMLParser):
             and self.current is self.ast
             and not len(self.ast["childrens"])
         ):
-            self.is_page = True
+            self.using_layout = True
             self.in_layout = True
             component = get_atrb(attrs, "@")
             if len(os.path.basename(str(component)).split(".")) == 1:
@@ -615,7 +616,8 @@ class CometParser(BaseHTMLParser):
             self.current["childrens"].append(data)
 
     def handle_decl(self, decl: str) -> None:
-        self.is_layout = True
+        self.ast["isBase"] = True
+        self.is_base = True
         self.current["childrens"].append(f"<!{decl}>")
 
     def handle_charref(self, name: str) -> None:

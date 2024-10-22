@@ -2,7 +2,7 @@
   <Helmet>
     <title>{$ u.full_name $}</title>
   </Helmet>
-  <div class="container px-2 mx-auto my-2">
+  <section class="container px-2 mx-auto my-2">
     <div class="mx-auto my-3 flex flex-col items-center gap-2">
       <h1 class="text-2xl">{{ u.full_name }}</h1>
       <span class="text-gray-500">
@@ -21,7 +21,7 @@
       s-of="u.blog_set.filter(id=key).prefetch_related('like_set','comment_set')"
       s-key="blog.id"
     >
-      <Include @="components/Blog" s-k />
+      <Include @="components/Blog" s-keys />
     </div>
-  </div>
+  </section>
 </Layout>

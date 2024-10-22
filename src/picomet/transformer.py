@@ -31,6 +31,7 @@ from picomet.utils import (
 )
 from picomet.utils import (
     get_atrb,
+    has_atrb,
     remove_atrb,
     set_atrb,
 )
@@ -41,6 +42,7 @@ except ImportError:
     pass
 
 BASE_DIR: Path = settings.BASE_DIR
+DEBUG: bool = settings.DEBUG
 
 EXCLUDES = {
     t: t for t in ["Outlet", "Fragment", "With", "Default", "Children", "Group"]
@@ -85,13 +87,11 @@ class Partial(TypedDict):
 
 class TransformKwargs(TypedDict):
     index: NotRequired[int]
-    el_index: NotRequired[dict[str, int]]
     file: str
 
 
 class LoopKwargs(TypedDict):
     index: int
-    el_index: NotRequired[dict[str, int]]
     loops: list[tuple[str, int]]
     file: str
     mode: Mode
@@ -100,7 +100,6 @@ class LoopKwargs(TypedDict):
 class SforKwargs(TypedDict):
     loops: list[tuple[str, int]]
     index: int
-    el_index: NotRequired[dict[str, int]]
     depth: int | None
     mode: Mode
     file: str
@@ -132,10 +131,10 @@ class Transformer:
     def _transform(
         self,
         node: AstNode,
-        xpath: str,
+        loc: str,
         loops: Loops = [],
         depth: int | None = None,
-        previous: bool | None = None,
+        prevRtrn: bool | None = None,
         mode: Mode = "client",
         **kwargs: Unpack[TransformKwargs],
     ) -> bool | None:
@@ -148,15 +147,11 @@ class Transformer:
             if (
                 any(f"&{group}" in self.targets for group in GROUPS)
                 or any(f"?{param}" in self.targets for param in PARAMS)
-                or (
-                    (f"${kwargs['file']}" in self.targets)
-                    and tag
-                    and (tag not in EXCLUDES)
-                )
-                or (xpath in self.targets)
+                or (loc in self.targets)
+                or (f"${node.get('file')}" in self.targets)
             ):
-                self.partials[xpath] = {"html": "", "css": {}, "js": {}}
-                self.c_target = xpath
+                self.partials[loc] = {"html": "", "css": {}, "js": {}}
+                self.c_target = loc
             else:
                 mode = cast(Mode, get_atrb(node, "mode", default=mode))
                 if mode == "server" and self.ctx is None:
@@ -165,9 +160,9 @@ class Transformer:
 
                 store: dict[str, Any] = {}
                 if tag != "With" and tag != "Default":
-                    rtrn = self.handle_conditionals(node, xpath, previous)
-                    if rtrn != "continue":
-                        return rtrn
+                    condition = self.handle_conditionals(node, prevRtrn)
+                    if not condition:
+                        return condition
 
                     for attr in node["attrs"]:
                         k, v = attr
@@ -192,18 +187,18 @@ class Transformer:
                         self.handle_sfor(
                             node,
                             childrens,
-                            xpath,
-                            loops=loops,
+                            loc,
                             depth=depth,
+                            loops=loops,
                             mode=mode,
                             **kwargs,
                         )
                     else:
                         self.loop(
                             childrens,
-                            xpath,
-                            loops=loops,
+                            loc,
                             depth=depth,
+                            loops=loops,
                             mode=mode,
                             **kwargs,
                         )
@@ -243,12 +238,18 @@ class Transformer:
 
         text = None
         sfor = None
+        mark = (node.get("file") and not node.get("isBase")) if DEBUG else False
 
         store = {}
+        rtrn = True
+
         if tag != "With" and tag != "Default":
-            rtrn = self.handle_conditionals(node, xpath, previous)
-            if rtrn != "continue":
-                return rtrn
+            condition = self.handle_conditionals(node, prevRtrn)
+            if not condition:
+                if has_atrb(node["attrs"], ["s-group", "s-param", "x-form"]):
+                    self.add_marker_start(loc)
+                    self.add_marker_end(loc)
+                return condition
 
             for attr in node["attrs"]:
                 k, v = attr
@@ -260,7 +261,13 @@ class Transformer:
 
             for attr in node["attrs"]:
                 k, v = attr
-                if k == "s-context":
+                if k == "s-group" or k == "s-param":
+                    mark = True
+                elif k == "x-form" and isAtrbEscaped(attr):
+                    mark = True
+                    attrs.append(("marker", edq(loc)))
+                    attrs.append(attr)
+                elif k == "s-context":
                     self.handle_scontext(v, store)
                 elif k.startswith("s-prop:"):
                     self.handle_sprop(k, v, attrs, mode)
@@ -332,8 +339,7 @@ class Transformer:
                             val = self.ctx.eval(v)
                             if val is not False:
                                 attrs.append((k.split(":")[1], edq(str(val))))
-                elif k == "s-k":
-                    attrs.append(("k", edq(str(loops[-1][1]))))
+                elif k == "s-k" or k == "s-keys":
                     attrs.append(("x-prop:keys", edq(dumps(loops))))
                 elif k.startswith("s-asset:"):
                     attrs.append(
@@ -368,6 +374,8 @@ class Transformer:
                 )
             else:
                 attributes = self.join_attrs(attrs)
+                if mark:
+                    self.add_marker_start(loc)
                 if isNodeWithChildrens(node):
                     childrens = node["childrens"]
                     if tag and (tag not in EXCLUDES):
@@ -377,20 +385,19 @@ class Transformer:
                         if not self.handle_sfor(
                             node,
                             childrens,
-                            xpath=xpath,
+                            loc=loc,
                             loops=loops,
                             depth=depth,
                             mode=mode,
                             **kwargs,
                         ):
-                            self.unpack_store(store)
-                            return False
+                            rtrn = False
                     elif text:
                         self.partials[self.c_target]["html"] += text
                     else:
                         self.loop(
                             childrens,
-                            xpath=xpath,
+                            loc=loc,
                             loops=loops,
                             depth=depth,
                             mode=mode,
@@ -398,11 +405,13 @@ class Transformer:
                         )
                     if tag and (tag not in EXCLUDES):
                         self.partials[self.c_target]["html"] += f"</{tag}>"
-
-                    if xpath == self.c_target and tag and (tag not in EXCLUDES):
-                        self.c_target = ""
                 else:
                     self.partials[self.c_target]["html"] += f"<{tag}{attributes} />"
+
+                if mark:
+                    self.add_marker_end(loc)
+                if loc == self.c_target:
+                    self.c_target = ""
         elif tag == "Css" or tag == "Sass":
             fname, compiled = asset_cache[cast(str, get_atrb(node, "@"))]
             asset_id = edq(fname.split(".")[0])
@@ -468,6 +477,9 @@ class Transformer:
                 "attrs": attrs,
                 "parent": self.current,
             }
+
+            if mark:
+                self.add_marker_start(loc)
             self.current["childrens"].append(element)
             if tag == "Group":
                 group = get_atrb(node, "name")
@@ -486,20 +498,19 @@ class Transformer:
                     if not self.handle_sfor(
                         node,
                         childrens,
-                        xpath=xpath,
+                        loc=loc,
                         loops=loops,
                         depth=depth,
                         mode=mode,
                         **kwargs,
                     ):
-                        self.unpack_store(store)
-                        return False
+                        rtrn = False
                 elif text:
                     element["childrens"].append(text)
                 else:
                     self.loop(
                         childrens,
-                        xpath=xpath,
+                        loc=loc,
                         loops=loops,
                         depth=depth,
                         mode=mode,
@@ -513,70 +524,36 @@ class Transformer:
                     self.groups["head"]["childrens"] += metas
                     remove_atrb(attrs, "group")
                 self.current = element["parent"]
-
+            if mark:
+                self.add_marker_end(loc)
         self.unpack_store(store)
-        return True
+        return rtrn
 
     def loop(
         self,
         childrens: list[AstNode],
-        xpath: str,
+        loc: str,
         depth: int | None = None,
         **kwargs: Unpack[LoopKwargs],
     ) -> None:
-        previous: bool | None = None
+        prevRtrn: bool | None = None
         depth = 0 if depth is None else depth + 1
-
-        el_index: dict[str, int] = kwargs.get("el_index", {})
         for index, children in enumerate(childrens):
-            _xpath = copy(xpath)
+            _loc = copy(loc)
             if isNodeElement(children):
-                tag = children["tag"]
-                if tag and (tag not in EXCLUDES):
-                    el_index.setdefault(tag, 0)
-                    el_index[tag] += 1
-                    k = get_atrb(children, "s-k")
-                    _index = (
-                        f"@k={kwargs['loops'][-1][1]}" if k is None else el_index[tag]
-                    )
-                    _xpath += f"/{tag}[{_index}]"
-                    if kwargs.get("el_index") is not None:
-                        kwargs.pop("el_index")
-                else:
-                    kwargs["el_index"] = el_index
-                _file = cast(str, children.get("file", kwargs["file"]))
-                kwargs["file"] = _file
+                _loc += f"{kwargs['index']}" if not _loc else f",{kwargs['index']}"
+                kwargs["file"] = cast(str, children.get("file", kwargs["file"]))
                 if (
                     len(self.targets)
                     and not self.c_target
-                    and (
-                        not (
-                            self.is_required(depth, index, _xpath)
-                            or (f"${_file}" in self.targets)
-                        )
-                    )
+                    and not self.is_required(depth, index, _loc)
                 ):
-                    if isinstance(kwargs.get("el_index"), dict):
-
-                        def traverse(node: AstElement) -> None:
-                            if not isNodeElement(node):
-                                return
-                            node = cast(Ast | ElementDoubleTag, node)
-                            for children in node["childrens"]:
-                                if isNodeElement(children):
-                                    tag = children["tag"]
-                                    if tag and (tag not in EXCLUDES):
-                                        el_index.setdefault(tag, 0)
-                                        el_index[tag] += 1
-                                    else:
-                                        traverse(children)
-
-                        traverse(children)
                     continue
+            kwargs["index"] = index
             _return = self._transform(
-                children, _xpath, depth=depth, previous=previous, **kwargs
+                children, _loc, depth=depth, prevRtrn=prevRtrn, **kwargs
             )
-            previous = _return if isinstance(children, dict) else previous
+            prevRtrn = _return if isinstance(children, dict) else prevRtrn
 
     def handle_scontext(self, v: AstAttrValue, store: dict[str, Any]) -> None:
         context_module, context_name = str(v).split(".")
@@ -588,57 +565,56 @@ class Transformer:
             self.context[k] = v
 
     def handle_conditionals(
-        self, node: AstElement, xpath: str, previous: bool | None
-    ) -> bool | None | Literal["continue"]:
+        self, node: AstElement, prevRtrn: bool | None
+    ) -> bool | None:
         show = get_atrb(node, "s-show")
         if isinstance(show, StrCode) and not eval(show.code, self.context):
-            self.add_placeholder(node, xpath)
             return False
         elif get_atrb(node, "s-if") and not eval(
             cast(StrCode, get_atrb(node, "s-if")).code, self.context
         ):
             return False
         elif get_atrb(node, "s-elif"):
-            if previous is True:
+            if prevRtrn is True:
                 return True
             elif not eval(cast(StrCode, get_atrb(node, "s-elif")).code, self.context):
                 return False
-        elif get_atrb(node, "s-else") is None and previous is True:
+        elif get_atrb(node, "s-else") is None and prevRtrn is True:
             return None
-        elif get_atrb(node, "s-empty") is None and previous is True:
+        elif get_atrb(node, "s-empty") is None and prevRtrn is True:
             return None
 
-        return "continue"
+        return True
 
-    def add_placeholder(self, node: AstElement, xpath: str) -> None:
-        tag = node["tag"]
-        if tag and (tag not in EXCLUDES):
-            if self.c_target:
-                self.partials[self.c_target]["html"] += (
-                    f"<{tag} hidden></{tag}>"
-                    if node.get("childrens")
-                    else f"<{tag} hidden />"
-                )
-                if xpath == self.c_target:
-                    self.c_target = ""
-            else:
-                if isNodeWithChildrens(node):
-                    self.current["childrens"].append(
-                        {
-                            "tag": tag,
-                            "attrs": [("hidden", None)],
-                            "childrens": [],
-                            "parent": self.current,
-                        }
-                    )
-                else:
-                    self.current["childrens"].append(
-                        {
-                            "tag": tag,
-                            "attrs": [("hidden", None)],
-                            "parent": self.current,
-                        }
-                    )
+    def add_marker_start(self, loc: str) -> None:
+        if self.c_target:
+            self.partials[self.c_target]["html"] += (
+                f"<Marker id='<{loc}' hidden></Marker>"
+            )
+        else:
+            self.current["childrens"].append(
+                {
+                    "tag": "Marker",
+                    "attrs": [("id", edq(f"<{loc}")), ("hidden", None)],
+                    "childrens": [],
+                    "parent": self.current,
+                }
+            )
+
+    def add_marker_end(self, loc: str) -> None:
+        if self.c_target:
+            self.partials[self.c_target]["html"] += (
+                f"<Marker id='>{loc}' hidden></Marker>"
+            )
+        else:
+            self.current["childrens"].append(
+                {
+                    "tag": "Marker",
+                    "attrs": [("id", edq(f">{loc}")), ("hidden", None)],
+                    "childrens": [],
+                    "parent": self.current,
+                }
+            )
 
     def handle_sprop(
         self, k: str, v: AstAttrValue, attrs: EscapedAttrs | None, mode: Mode
@@ -661,14 +637,14 @@ class Transformer:
         self,
         node: Ast | ElementDoubleTag,
         childrens: list[AstNode],
-        xpath: str,
+        loc: str,
         **kwargs: Unpack[SforKwargs],
     ) -> bool | None:
         sfor = cast(str, get_atrb(node, "s-for"))
         skey = cast(StrCode, get_atrb(node, "s-key"))
         array: list[Any] = []
         for key in self.keys:
-            if xpath == key[0]:
+            if loc == key[0]:
                 array = eval(
                     cast(StrCode, get_atrb(node, "s-of")).code,
                     self.context,
@@ -676,20 +652,21 @@ class Transformer:
                 )
         if not array:
             array = eval(cast(StrCode, get_atrb(node, "s-in")).code, self.context)
-        el_index: dict[str, int] = {}
-        kwargs["el_index"] = el_index
 
+        _loc = copy(loc)
         outer = self.context.get(sfor)
         for index, item in enumerate(array):
             self.context[sfor] = item
             self.context["index"] = index
             if skey:
+                _skey = int(eval(skey.code, self.context))
+                _loc = f"{loc}:[{_skey}]"
                 loops: Loops = [
                     *kwargs["loops"],
-                    (xpath, int(eval(skey.code, self.context))),
+                    (loc, _skey),
                 ]
                 kwargs["loops"] = loops
-            self.loop(childrens, xpath, **kwargs)
+            self.loop(childrens, _loc, **kwargs)
         self.context[sfor] = outer
         if len(array):
             return True
@@ -726,7 +703,7 @@ class Transformer:
             )
         )
 
-    def is_required(self, depth: int, index: int, xpath: str) -> bool:
+    def is_required(self, depth: int, index: int, pos: str) -> bool:
         for target in self.targets:
             if target.startswith("$"):
                 for loc in self.ast["map"]["files"].get(target[1:], []):
@@ -740,9 +717,8 @@ class Transformer:
                 for loc in self.ast["map"]["params"].get(target[1:], []):
                     if len(loc) > depth and loc[depth] == index:
                         return True
-            elif target.startswith("/"):
-                if target.startswith(xpath):
-                    return True
+            elif target.startswith(pos):
+                return True
         return False
 
     def compile_content(self) -> str:
