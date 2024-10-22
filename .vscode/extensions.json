@@ -4,6 +4,7 @@
     "charliermarsh.ruff",
     "editorconfig.editorconfig",
     "esbenp.prettier-vscode",
-    "trond-snekvik.simple-rst"
+    "trond-snekvik.simple-rst",
+    "picomet.alpinejs"
   ]
 }
