@@ -50,25 +50,25 @@
           s-group="auth"
           x-show="show"
           x-cloak
-          class="absolute z-20 top-auto right-0 border rounded-md py-2 bg-white flex flex-col"
+          class="absolute z-20 top-auto right-0 border rounded-md p-2 bg-white flex flex-col items-center"
         >
           <Fragment s-if="user.is_authenticated">
             <X
               href="/profile"
-              class="py-2 px-6 hover:bg-gray-200 active:bg-gray-300"
+              class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="show=false;"
             >
               Profile
             </X>
             <X
               href="/settings"
-              class="py-2 px-6 hover:bg-gray-200 active:bg-gray-300"
+              class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="show=false;"
             >
               Settings
             </X>
             <button
-              class="py-2 px-6 hover:bg-gray-200 active:bg-gray-300"
+              class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="call('core.logout', {});show=false;"
             >
               Logout
@@ -76,13 +76,13 @@
           </Fragment>
           <Fragment s-else>
             <button
-              class="py-2 px-6 hover:bg-gray-200 active:bg-gray-300"
+              class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="setDialog('login');show=false;"
             >
               Login
             </button>
             <button
-              class="py-2 px-6 hover:bg-gray-200 active:bg-gray-300"
+              class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="setDialog('signup');show=false;"
             >
               Signup

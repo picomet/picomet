@@ -4,7 +4,7 @@
 
 @layer components {
   .btn-primary {
-    @apply py-2 px-4 bg-teal-500 text-white rounded-md hover:bg-teal-600 focus:bg-teal-700;
+    @apply px-4 py-2 rounded-md text-sm font-medium text-teal-600 bg-teal-100 hover:bg-teal-200 active:bg-teal-300 transition-colors focus:outline-none;
   }
   .input {
     @apply bg-white focus:outline-none focus:border-blue-300 border border-gray-300 rounded-lg py-2 px-4 block w-full appearance-none leading-normal;

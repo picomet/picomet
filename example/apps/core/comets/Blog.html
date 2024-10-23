@@ -34,10 +34,10 @@
         <div
           x-show="show"
           x-cloak
-          class="absolute top-auto right-0 border rounded-md py-2 bg-white"
+          class="absolute top-auto right-0 border rounded-md p-2 bg-white"
         >
           <button
-            class="py-1 px-6 hover:bg-gray-200 active:bg-gray-300"
+            class="py-1 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
             s-bind:x-prop:blog_slug="blog.slug"
             @click="call('core.delete_blog', {blog: blog_slug})"
           >
@@ -155,7 +155,11 @@
         class="mt-2 flex"
         client
       >
-        <input type="text" class="input rounded-e-none" x-model="comment" />
+        <input
+          type="text"
+          class="input border border-teal-100 rounded-e-none"
+          x-model="comment"
+        />
         <button type="submit" class="btn-primary rounded-s-none">
           Comment
         </button>
