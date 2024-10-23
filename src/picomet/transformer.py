@@ -277,7 +277,8 @@ class Transformer:
                 elif k == "x-show" and isAtrbEscaped(attr):
                     attrs.append(attr)
                     if mode == "server" and self.ctx and not self.ctx.eval(v):
-                        styles = get_atrb(attrs, "style", default="").split(";")
+                        style = get_atrb(attrs, "style", default="")
+                        styles = style.split(";") if style else []
                         styles.append("display:none!important")
                         set_atrb(attrs, "style", ";".join(styles))
                 elif k == "s-text":
