@@ -45,6 +45,7 @@ Before you begin contributing to Picomet, make sure you have the following insta
 
     ```bash
     pip install -r requirements.txt
+    pip install -e .
     ```
 
     ```bash
