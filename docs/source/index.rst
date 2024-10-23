@@ -38,4 +38,5 @@ Topics
    action
    settings
    commands
+   testing
    deploying
