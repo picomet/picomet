@@ -550,10 +550,10 @@ class Transformer:
                 ):
                     continue
             kwargs["index"] = index
-            _return = self._transform(
+            rtrn = self._transform(
                 children, _loc, depth=depth, prevRtrn=prevRtrn, **kwargs
             )
-            prevRtrn = _return if isinstance(children, dict) else prevRtrn
+            prevRtrn = rtrn if isNodeElement(children) else prevRtrn
 
     def handle_scontext(self, v: AstAttrValue, store: dict[str, Any]) -> None:
         context_module, context_name = str(v).split(".")
