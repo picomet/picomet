@@ -249,6 +249,8 @@ class Transformer:
                 if has_atrb(node["attrs"], ["s-group", "s-param", "x-form"]):
                     self.add_marker_start(loc)
                     self.add_marker_end(loc)
+                    if loc == self.c_target:
+                        self.c_target = ""
                 return condition
 
             for attr in node["attrs"]:
