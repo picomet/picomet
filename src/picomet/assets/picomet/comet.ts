@@ -234,17 +234,19 @@ export async function call(
   keys?: [string, number][][],
 ) {
   const url = new URL(window.location.toString());
-  let formData: FormData;
+  let formData: string | FormData = "";
   if (payload instanceof FormData) {
     formData = payload;
   } else {
-    formData = new FormData();
-    for (const key in payload) {
-      const value: JsonValue = payload[key];
-      if (typeof value == "string" || value instanceof Blob) {
-        formData.append(key, value);
-      } else if (typeof value == "number" || typeof value == "boolean") {
-        formData.append(key, JSON.stringify(value));
+    if (Object.keys(payload).length) {
+      formData = new FormData();
+      for (const key in payload) {
+        const value: JsonValue = payload[key];
+        if (typeof value == "string" || value instanceof Blob) {
+          formData.append(key, value);
+        } else if (typeof value == "number" || typeof value == "boolean") {
+          formData.append(key, JSON.stringify(value));
+        }
       }
     }
   }
