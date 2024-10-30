@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from core.decorators import normaluser_required
-from core.forms import AuthenticationForm, BlogForm, UserAddForm, UserChangleForm
+from core.forms import AuthenticationForm, BlogForm, UserAddForm, UserProfileChangleForm
 from core.models import Blog, Bookmark, User
 from picomet.decorators import template
 from picomet.http import PicometResponseRedirect
@@ -29,15 +29,23 @@ def profile(request: HttpRequest):
 
 @normaluser_required
 @ensure_csrf_cookie
-@template("Settings")
-def settings(request: HttpRequest):
+@template("ProfileSettings")
+def profile_settings(request: HttpRequest):
     context = {}
-    form = UserChangleForm(instance=request.user)
+    form = UserProfileChangleForm(instance=request.user)
     if request.method == "POST" and not request.action:
-        form = UserChangleForm(request.POST, instance=request.user)
+        form = UserProfileChangleForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
     context["form"] = form
+    return render(request, context)
+
+
+@normaluser_required
+@ensure_csrf_cookie
+@template("AccountSettings")
+def account_settings(request: HttpRequest):
+    context = {}
     return render(request, context)
 
 

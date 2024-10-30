@@ -1,0 +1,23 @@
+<Layout @="layouts/Settings">
+  <Helmet>
+    <title>Account | Settings</title>
+  </Helmet>
+  <section>
+    <div class="w-11/12 md:max-w-md mx-auto">
+      <div class="border rounded-md p-4">
+        <h3 class="text-xl">Account Deletion</h3>
+        <p class="text-sm text-gray-500">
+          Once you delete your account, there is no going back. Please be
+          certain.
+        </p>
+        <button
+          type="button"
+          class="btn-danger mt-2"
+          @click="call('core.delete', {});"
+        >
+          Delete Account
+        </button>
+      </div>
+    </div>
+  </section>
+</Layout>

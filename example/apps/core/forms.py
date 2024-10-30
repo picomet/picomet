@@ -27,7 +27,7 @@ class UserAddForm(forms.ModelForm):
         fields = ("full_name", "username")
 
 
-class UserChangleForm(forms.ModelForm):
+class UserProfileChangleForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ("full_name", "username")

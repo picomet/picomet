@@ -1,8 +1,10 @@
 import base64
 import os
+from itertools import chain
 from pathlib import Path
 
 from django.conf import settings
+from django.template import engines
 
 from picomet.utils import mdhash
 
@@ -18,6 +20,21 @@ def get_comet_id(path: str) -> str:
         return mdhash(rel, 8)
     else:
         return mdhash(path.as_posix(), 8)
+
+
+def find_comet_name(path: str) -> str | None:
+    comet_dirs = list(
+        chain.from_iterable(
+            [
+                [str(d) for d in loader.get_dirs()]
+                for loader in engines["picomet"].engine.template_loaders
+            ]
+        )
+    )
+    for comet_dir in comet_dirs:
+        if path.startswith(comet_dir):
+            return path[len(comet_dir) + 1 :]
+    return None
 
 
 def read_source(path: str) -> str:

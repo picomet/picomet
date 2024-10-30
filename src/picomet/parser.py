@@ -4,14 +4,14 @@ import re
 import sys
 from collections.abc import Callable
 from copy import deepcopy
-from functools import wraps
+from functools import cache, wraps
 from glob import glob
 from html import unescape
 from html.parser import HTMLParser
 from itertools import chain
 from json import JSONEncoder, dumps, loads
 from pathlib import Path
-from typing import Any, Literal, TypedDict, TypeVar, cast, override
+from typing import Any, Literal, TypeVar, cast, override
 
 from django.apps import apps
 from django.conf import settings
@@ -19,11 +19,12 @@ from django.template import engines, loader
 from django.template.backends.django import Template
 from django.utils.html import escape
 
-from picomet.helpers import get_comet_id
+from picomet.helpers import find_comet_name, get_comet_id
 from picomet.types import (
     Ast,
     AstAttrs,
     AstElement,
+    AstMap,
     CodeAttrs,
     DoubleQuoteEscapedStr,
     ElementDoubleTag,
@@ -282,12 +283,6 @@ def load_comet(path: str, folder: Path) -> None:
             ast_cache[path] = ast
 
 
-class Map(TypedDict):
-    groups: dict[str, list[list[int]]]
-    params: dict[str, list[list[int]]]
-    files: dict[str, list[list[int]]]
-
-
 R = TypeVar("R")
 
 
@@ -306,15 +301,15 @@ def handle_addition(func: Callable[..., R]) -> Callable[..., R]:
 
 
 class CometParser(BaseHTMLParser):
-    def __init__(self, *args: list[Any], **kwargs: dict[str, bool]):
+    def __init__(self, path: str, use_cache: bool = True, **kwargs: dict[str, bool]):
         super().__init__()
         self.ast: Ast = {
             "tag": "Fragment",
             "attrs": [],
             "childrens": [],
             "parent": None,
-            "map": {"groups": {}, "params": {}, "files": {}},
-            "file": "",
+            "map": {"groups": {}, "params": {}, "layouts": {}, "files": {}},
+            "file": path,
             "isBase": False,
         }
         self.imports: dict[str, str] = {}
@@ -325,27 +320,35 @@ class CometParser(BaseHTMLParser):
         self.in_layout: bool = False
         self.in_debug: bool = False
         self.in_pro: bool = False
-        self.id: str = ""
 
-    @override  # type: ignore
-    def feed(self, data: str, id: str, use_cache: bool = True) -> None:
-        self.id = id
-        cached = ast_cache.get(id)
-        if use_cache and not cached and not (BUILD or RECOMPILE):
-            load_comet(id, (cache_dir if RUNSERVER else build_dir) / "comets")
-        cached = ast_cache.get(id)
+        self.path = path
+        self.use_cache: bool = use_cache
+        self.parsed: bool = False
 
-        if not cached or not use_cache:
+    @property
+    @cache
+    def name(self) -> str | None:
+        return find_comet_name(self.path)
+
+    def feed(self, feed: str) -> None:
+        if self.parsed:
+            return
+        self.parsed = True
+        cached = ast_cache.get(self.path)
+        if self.use_cache and not cached and not (BUILD or RECOMPILE):
+            load_comet(self.path, (cache_dir if RUNSERVER else build_dir) / "comets")
+        cached = ast_cache.get(self.path)
+
+        if not cached or not self.use_cache:
             for d1 in dgraph:
                 for i, d2 in enumerate(dgraph[d1]):
-                    if d2 == id:
+                    if d2 == self.path:
                         del dgraph[d1][i]
-            self.ast["file"] = id
-            self.ast["map"]["files"].setdefault(id, [[]])
-            super().feed(data)
-            ast_cache[id] = self.ast
+            self.ast["map"]["files"].setdefault(self.path, [[]])
+            super().feed(feed)
+            ast_cache[self.path] = self.ast
             if not BUILD:
-                save_commet(id, self.ast, cache_dir / "comets")
+                save_commet(self.path, self.ast, cache_dir / "comets")
                 save_dgraph()
         else:
             self.ast = cached
@@ -365,17 +368,17 @@ class CometParser(BaseHTMLParser):
         ):
             self.using_layout = True
             self.in_layout = True
-            component = get_atrb(attrs, "@")
-            if len(os.path.basename(str(component)).split(".")) == 1:
+            component = str(get_atrb(attrs, "@"))
+            if len(os.path.basename(component).split(".")) == 1:
                 component = f"{component}.html"
             template = loader.get_template(component, using="picomet").template
-            id = template.origin.name
-            parser = CometParser()
-            parser.feed(template.source, id)
-            self.add_dep(id, self.id)
+            path = template.origin.name
+            self.add_dep(path, self.path)
             ast = deepcopy(self.ast)
-            self.ast = deepcopy(parser.ast)
-            loc = self.find_loc("Outlet", self.ast, [])
+            self.ast = deepcopy(parse(template.source, path).ast)
+            loc = self.find_loc(
+                "Outlet", self.ast, [("layout", edq(mdhash(component, 8)))]
+            )
             if loc:
                 el: Ast | ElementDoubleTag = self.ast
                 for _l in loc:
@@ -392,46 +395,41 @@ class CometParser(BaseHTMLParser):
             or engines["picomet"].engine.components.get(tag)
             or (tag == "Include")
         ):
-            component = (
+            component = str(
                 self.imports.get(tag)
                 or engines["picomet"].engine.components.get(tag)
                 or get_atrb(attrs, "@")
             )
-            if isinstance(component, str):
-                if len(os.path.basename(component).split(".")) == 1:
-                    component = f"{component}.html"
-                template = loader.get_template(component, using="picomet").template
-                id = template.origin.name
-                parser = CometParser()
-                parser.feed(template.source, id)
-                ast = deepcopy(parser.ast)
-                self.add_props(
-                    ast,
-                    self.process_attrs(
-                        [(k, v) for k, v in attrs if k != "@" and not k.startswith(".")]
-                    ),
-                )
-                self.add_dep(id, self.id)
-                element = {
-                    "tag": "With",
-                    "attrs": cast(
-                        AstAttrs,
-                        self.withs([(k[1:], v) for k, v in attrs if k.startswith(".")]),
-                    ),
-                    "childrens": [ast],
-                    "parent": self.current,
-                }
-                self.current["childrens"].append(element)
-                ast["parent"] = element
-                self.load_component_map(ast["map"])
+            if len(os.path.basename(component).split(".")) == 1:
+                component = f"{component}.html"
+            template = loader.get_template(component, using="picomet").template
+            path = template.origin.name
+            ast = deepcopy(parse(template.source, path).ast)
+            self.add_props(
+                ast,
+                self.process_attrs(
+                    [(k, v) for k, v in attrs if k != "@" and not k.startswith(".")]
+                ),
+            )
+            self.add_dep(path, self.path)
+            element = {
+                "tag": "With",
+                "attrs": cast(
+                    AstAttrs,
+                    self.withs([(k[1:], v) for k, v in attrs if k.startswith(".")]),
+                ),
+                "childrens": [ast],
+                "parent": self.current,
+            }
+            self.current["childrens"].append(element)
+            ast["parent"] = element
+            self.load_component_map(ast["map"])
 
-                childrenLoc = self.find_loc("Children", ast, [])
-                childrenElement = self.find_node("Children", element, [])
-                if childrenLoc and childrenElement:
-                    self.loc = (
-                        self.loc + [len(self.current["childrens"]), 0] + childrenLoc
-                    )
-                    self.current = cast(ElementDoubleTag, childrenElement)
+            childrenLoc = self.find_loc("Children", ast, [])
+            childrenElement = self.find_node("Children", element, [])
+            if childrenLoc and childrenElement:
+                self.loc = self.loc + [len(self.current["childrens"]), 0] + childrenLoc
+                self.current = cast(ElementDoubleTag, childrenElement)
         else:
             attributes: AstAttrs
             if tag == "With":
@@ -459,6 +457,13 @@ class CometParser(BaseHTMLParser):
             if component:
                 self.imports[tag[7:]] = str(component)
         elif tag == "Outlet":
+            if self.name:
+                layout = edq(mdhash(self.name, 8))
+                attrs = [("layout", layout)]
+                self.ast["map"]["layouts"].setdefault(layout, [])
+                self.ast["map"]["layouts"][layout] = self.loc.copy() + [
+                    len(self.current["childrens"])
+                ]
             self.current["childrens"].append(
                 {
                     "tag": tag,
@@ -490,11 +495,9 @@ class CometParser(BaseHTMLParser):
                 if len(os.path.basename(component).split(".")) == 1:
                     component = f"{component}.html"
                 template = loader.get_template(component, using="picomet").template
-                id = template.origin.name
-                parser = CometParser()
-                parser.feed(template.source, id)
-                ast = deepcopy(parser.ast)
-                self.add_dep(id, self.id)
+                path = template.origin.name
+                ast = deepcopy(parse(template.source, path).ast)
+                self.add_dep(path, self.path)
                 self.add_props(
                     ast,
                     self.process_attrs(
@@ -527,7 +530,7 @@ class CometParser(BaseHTMLParser):
             if isinstance(asset_name, str):
                 asset = find_in_comets(asset_name) or find_in_assets(asset_name)
                 if asset:
-                    self.add_dep(asset, self.id)
+                    self.add_dep(asset, self.path)
                     if not asset_cache.get(asset):
                         compile_asset(asset)
                     set_atrb(attrs, "@", cast(DoubleQuoteEscapedStr, asset))
@@ -540,11 +543,11 @@ class CometParser(BaseHTMLParser):
                     )
         elif tag == "Tailwind":
             if self.current["tag"] == "head":
-                twlayouts[self.id] = str(get_atrb(attrs, "@"))
+                twlayouts[self.path] = str(get_atrb(attrs, "@"))
                 if not BUILD:
                     with open(cache_dir / "twlayouts.json", "w") as f:
                         f.write(dumps(twlayouts))
-                attrs.append(("layout", edq(self.id)))
+                attrs.append(("layout", edq(self.path)))
                 self.current["childrens"].append(
                     {
                         "tag": tag,
@@ -604,7 +607,7 @@ class CometParser(BaseHTMLParser):
                 )
                 groups = [group for group in (match.groups()) if group is not None]
                 if groups[0] == "{$":
-                    self.current["childrens"].append(StrCode(groups[1], self.id))
+                    self.current["childrens"].append(StrCode(groups[1], self.path))
                 elif groups[0].startswith("{{") or groups[0].startswith("{%"):
                     self.current["childrens"].append(
                         django_engine.from_string(groups[0])
@@ -649,7 +652,7 @@ class CometParser(BaseHTMLParser):
                 asset = find_in_assets(v)
                 if asset:
                     if not BUILD:
-                        self.add_dep(asset, self.id)
+                        self.add_dep(asset, self.path)
                         attributes += [
                             (k, edq(asset)),
                             ("data-asset-id", edq(compile_resouce(asset))),
@@ -676,7 +679,7 @@ class CometParser(BaseHTMLParser):
         return attributes
 
     def compile(self, v: str | DoubleQuoteEscapedStr) -> StrCode:
-        return StrCode(v, self.id)
+        return StrCode(v, self.path)
 
     def withs(self, attrs: PureAttrs) -> CodeAttrs:
         _withs: CodeAttrs = []
@@ -769,7 +772,7 @@ class CometParser(BaseHTMLParser):
                     return node
         return None
 
-    def load_component_map(self, map: Map) -> None:
+    def load_component_map(self, map: AstMap) -> None:
         for target in map:
             target = cast(Literal["files", "groups", "params"], target)
             for id in map[target]:
@@ -780,6 +783,12 @@ class CometParser(BaseHTMLParser):
                         for _loc in map[target][id]
                     ]
                 )
+
+
+def parse(source: str, path: str, use_cache: bool = True) -> CometParser:
+    parser = CometParser(path, use_cache)
+    parser.feed(source)
+    return parser
 
 
 sass_load_paths = [
@@ -876,18 +885,23 @@ def compile_tailwind(layout: str) -> None:
 
     content = []
 
-    def traverse(f: str) -> None:
+    def find_depending(f: str) -> None:
         if f not in content:
             content.append(f)
         for d1 in dgraph:
             for d2 in dgraph[d1]:
                 if d2 == f:
-                    traverse(d1)
+                    find_depending(d1)
 
-    traverse(layout)
+    def find_depended(f: str) -> None:
+        if f not in content:
+            content.append(f)
+        for d in dgraph.get(f, []):
+            find_depended(d)
+            find_depending(d)
 
-    for f in dgraph[layout]:
-        traverse(f)
+    find_depending(layout)
+    find_depended(layout)
 
     from javascript import require
 

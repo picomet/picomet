@@ -1,15 +1,6 @@
 <Import.X @="components/A" />
 
-<nav
-  s-prop:_path="request.path"
-  x-data="{path: _path}"
-  x-init="navigation.addEventListener('navigate', () => {
-    setTimeout(() => {
-      $data.path = location.pathname;
-    }, 0);
-  });"
-  class="bg-gray-100 text-gray-600 body-font"
->
+<nav class="bg-gray-100 text-gray-600 body-font">
   <div
     class="container px-2 mx-auto flex flex-wrap py-5 flex-col md:flex-row items-center"
   >
@@ -27,30 +18,27 @@
         href="/new"
         class="hover:text-blue-700"
         x-bind:class="{'text-blue-600': path == '/new'}"
+        title="New"
       >
-        New
-      </X>
-      <X
-        href="/bookmarks"
-        class="hover:text-blue-700"
-        x-bind:class="{'text-blue-600': path == '/bookmarks'}"
-      >
-        Bookmarks
+        <Include @="icons/Add" />
       </X>
       <div
+        class="relative"
         x-data="{show:false}"
         @click.outside="show=false"
         client
-        class="relative"
       >
-        <span class="hover:text-gray-900 cursor-pointer" @click="show=!show">
-          Account
+        <span
+          class="text-gray-500 hover:text-blue-700 cursor-pointer"
+          @click="show=!show"
+        >
+          <Include @="icons/Account" />
         </span>
         <div
+          class="absolute z-20 top-auto right-0 border rounded-md p-2 bg-white flex flex-col items-stretch text-center"
           s-group="auth"
           x-show="show"
           x-cloak
-          class="absolute z-20 top-auto right-0 border rounded-md p-2 bg-white flex flex-col items-center"
         >
           <Fragment s-if="user.is_authenticated">
             <X
@@ -58,10 +46,17 @@
               class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="show=false;"
             >
-              Profile
+              @{{user.username}}
             </X>
             <X
-              href="/settings"
+              href="/bookmarks"
+              class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
+              @click="show=false;"
+            >
+              Bookmarks
+            </X>
+            <X
+              href="/settings/profile"
               class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="show=false;"
             >

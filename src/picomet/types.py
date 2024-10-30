@@ -48,6 +48,7 @@ class ElementSingleTag(TypedDict):
 class AstMap(TypedDict):
     groups: dict[str, list[list[int]]]
     params: dict[str, list[list[int]]]
+    layouts: dict[str, list[int]]
     files: dict[str, list[list[int]]]
 
 

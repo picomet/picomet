@@ -25,12 +25,12 @@ from picomet.loaders import cache_file, fcache, fhash
 from picomet.parser import (
     ASSETFILES_DIRS,
     STATIC_URL,
-    CometParser,
     asset_cache,
     compile_asset,
     compile_resouce,
     compile_tailwind,
     dgraph,
+    parse,
     twlayouts,
 )
 from picomet.utils import mdhash
@@ -147,8 +147,7 @@ def parse_patterns(url_patterns: list[URLResolver | URLPattern]) -> None:
             html_file = renderer.origin.name
             with open(html_file) as f:
                 cache_file(html_file, f.read())
-            parser = CometParser()
-            parser.feed(fcache[html_file], html_file)
+            parse(fcache[html_file], html_file, renderer.origin.template_name)
         elif isinstance(url_pattern, URLResolver):
             parse_patterns(
                 getattr(
@@ -178,56 +177,58 @@ def compile_file(path: str) -> None:
         ext == ".html"
         and (cache_dir / "comets" / f"{get_comet_id(path)}.json").exists()
     ):
-        parser = CometParser()
-        parser.feed(fcache[path], path, use_cache=False)
+        parser = parse(fcache[path], path, use_cache=False)
         dmap = deepcopy(dgraph)
 
-        def update(p: str) -> None:
+        def update_depended(p: str) -> None:
             for d in dmap.get(p, []):
                 if not fcache.get(d):
                     if os.path.exists(d):
                         with open(d) as f:
                             cache_file(d, f.read())
                     else:
-                        return
-                parser = CometParser()
-                parser.feed(fcache[d], d, use_cache=False)
-                update(d)
+                        continue
+                parse(fcache[d], d, use_cache=False)
+                update_depended(d)
 
-        update(path)
+        update_depended(path)
 
         if path in twlayouts.keys():
             compile_tailwind(path)
         else:
             compiled = []
 
-            def traverse(f: str) -> None:
-                if f in twlayouts.keys():
-                    if f not in compiled:
-                        compile_tailwind(f)
-                        compiled.append(f)
-                        hmr_send_message(
-                            {
-                                "staticUrl": STATIC_URL,
-                                "tailwind": asset_cache[f][0],
-                            }
-                        )
+            def compile_layout(f: str) -> None:
+                compile_tailwind(f)
+                compiled.append(f)
+                hmr_send_message(
+                    {
+                        "staticUrl": STATIC_URL,
+                        "tailwind": asset_cache[f][0],
+                    }
+                )
 
-                for layout in twlayouts.keys():
-                    if f in dgraph.get(layout, []):
-                        if layout not in compiled:
-                            compile_tailwind(layout)
-                            compiled.append(layout)
-                            hmr_send_message(
-                                {
-                                    "staticUrl": STATIC_URL,
-                                    "tailwind": asset_cache[layout][0],
-                                }
-                            )
+            def find_depending_layout(f: str) -> None:
+                for d1 in dgraph:
+                    for d2 in dgraph[d1]:
+                        if d2 == f:
+                            if d1 in twlayouts.keys():
+                                if d1 not in compiled:
+                                    compile_layout(d1)
+                            else:
+                                find_depending_layout(d1)
+
+            def find_depended_layout(f: str) -> None:
                 for d in dgraph.get(f, []):
-                    traverse(d)
+                    if d in twlayouts.keys():
+                        if d not in compiled:
+                            compile_layout(d)
+                    else:
+                        find_depended_layout(d)
+                        find_depending_layout(d)
 
-            traverse(path)
+            find_depended_layout(path)
+            find_depending_layout(path)
 
         hmr_send_message({"base" if parser.is_base else "template": path})
     elif (ext == ".js" or ext == ".ts") and len(dgraph.get(path, [])):

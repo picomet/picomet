@@ -1,6 +1,7 @@
 import functools
 
-from django.contrib.auth import logout as _logout
+from django.contrib.auth import logout as lo
+from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest
 from django.urls import reverse
 from furl import furl
@@ -23,7 +24,14 @@ def normaluser_required(function):
 
 @normaluser_required
 def logout(request: HttpRequest):
-    _logout(request)
+    lo(request)
+    return ["&auth"]
+
+
+@normaluser_required
+def delete(request: HttpRequest):
+    request.user.delete()
+    request.user = AnonymousUser()
     return ["&auth"]
 
 

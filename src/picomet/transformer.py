@@ -126,7 +126,24 @@ class Transformer:
         self.groups: dict[str, EscGroupElement] = {}
 
     def transform(self) -> None:
+        self.clean_targets()
         self._transform(self.ast, "", file=self.ast["file"])
+
+    def clean_targets(self) -> None:
+        targets: list[str] = []
+        layoutLoc: list[int] = []
+        layoutId: str | None = None
+        for target in self.targets:
+            if not target.startswith("+"):
+                targets.append(target)
+            else:
+                loLoc = self.ast["map"]["layouts"].get(target[1:], [])
+                if len(loLoc) > len(layoutLoc):
+                    layoutLoc = loLoc
+                    layoutId = target[1:]
+        if layoutId:
+            targets.append(f"+{layoutId}")
+        self.targets = targets
 
     def _transform(
         self,
@@ -149,6 +166,7 @@ class Transformer:
                 or any(f"?{param}" in self.targets for param in PARAMS)
                 or (loc in self.targets)
                 or (f"${node.get('file')}" in self.targets)
+                or (tag == "Outlet" and f"+{get_atrb(node, "layout")}" in self.targets)
             ):
                 self.partials[loc] = {"html": "", "css": {}, "js": {}}
                 self.c_target = loc
@@ -239,6 +257,7 @@ class Transformer:
         text = None
         sfor = None
         mark = (node.get("file") and not node.get("isBase")) if DEBUG else False
+        mark_attrs: EscapedAttrs = []
 
         store = {}
         rtrn = True
@@ -247,7 +266,7 @@ class Transformer:
             condition = self.handle_conditionals(node, prevRtrn)
             if not condition:
                 if has_atrb(node["attrs"], ["s-group", "s-param", "x-form"]):
-                    self.add_marker_start(loc)
+                    self.add_marker_start(loc, mark_attrs)
                     self.add_marker_end(loc)
                     if loc == self.c_target:
                         self.c_target = ""
@@ -359,6 +378,12 @@ class Transformer:
         if tag == "html" and self.ctx:
             self.ctx.eval("var isServer = true;")
             attrs.append(("x-data", "{isServer: false, keys: []}"))
+        elif tag == "Outlet":
+            mark = True
+            layout = cast(str, get_atrb(node, "layout"))
+            if layout:
+                mark_attrs.append(("group", edq("layout")))
+                mark_attrs.append(("gId", edq(layout)))
         elif tag == "With":
             self.pack_with(node["attrs"], store)
         elif tag == "Default":
@@ -378,7 +403,7 @@ class Transformer:
             else:
                 attributes = self.join_attrs(attrs)
                 if mark:
-                    self.add_marker_start(loc)
+                    self.add_marker_start(loc, mark_attrs)
                 if isNodeWithChildrens(node):
                     childrens = node["childrens"]
                     if tag and (tag not in EXCLUDES):
@@ -482,7 +507,7 @@ class Transformer:
             }
 
             if mark:
-                self.add_marker_start(loc)
+                self.add_marker_start(loc, mark_attrs)
             self.current["childrens"].append(element)
             if tag == "Group":
                 group = get_atrb(node, "name")
@@ -589,16 +614,16 @@ class Transformer:
 
         return True
 
-    def add_marker_start(self, loc: str) -> None:
+    def add_marker_start(self, loc: str, attrs: EscapedAttrs) -> None:
         if self.c_target:
             self.partials[self.c_target]["html"] += (
-                f"<Marker id='<{loc}' hidden></Marker>"
+                f'<Marker id="<{loc}"{self.join_attrs(attrs)} hidden></Marker>'
             )
         else:
             self.current["childrens"].append(
                 {
                     "tag": "Marker",
-                    "attrs": [("id", edq(f"<{loc}")), ("hidden", None)],
+                    "attrs": [("id", edq(f"<{loc}")), *attrs, ("hidden", None)],
                     "childrens": [],
                     "parent": self.current,
                 }
@@ -607,7 +632,7 @@ class Transformer:
     def add_marker_end(self, loc: str) -> None:
         if self.c_target:
             self.partials[self.c_target]["html"] += (
-                f"<Marker id='>{loc}' hidden></Marker>"
+                f'<Marker id=">{loc}" hidden></Marker>'
             )
         else:
             self.current["childrens"].append(
@@ -720,6 +745,10 @@ class Transformer:
                 for loc in self.ast["map"]["params"].get(target[1:], []):
                     if len(loc) > depth and loc[depth] == index:
                         return True
+            elif target.startswith("+"):
+                loc = self.ast["map"]["layouts"].get(target[1:], [-1])
+                if len(loc) > depth and loc[depth] == index:
+                    return True
             elif target.startswith(pos):
                 return True
         return False

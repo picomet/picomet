@@ -17,19 +17,24 @@
       <Ts @="picomet/hmr.ts" />
     </Debug>
   </head>
-
   <body
+    s-prop:_path="request.path"
     s-prop:_v="request.GET.get('v', '')"
-    x-data="{v: _v}"
+    x-data="{path: _path, v: _v}"
     x-init="navigation.addEventListener('navigate', () => {
       setTimeout(() => {
         $data.v = new URLSearchParams(location.search).get('v');
       }, 0);
-    });"
+    });
+    navigation.addEventListener('navigate', () => {
+      setTimeout(() => {
+        $data.path = location.pathname;
+      }, 0);
+    })"
   >
     <main>
       <Include @="components/Navbar" />
-      <div s-group="page">
+      <div>
         <Outlet />
       </div>
       <Include @="components/Login" />

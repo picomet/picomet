@@ -29,6 +29,14 @@ function getParamTargets(urlPrevious: string, urlNew: string) {
   return targets;
 }
 
+function getLayoutTargets() {
+  const loTargets: string[] = [];
+  document.querySelectorAll('Marker[group="layout"]').forEach((loMarker) => {
+    loTargets.push(`+${loMarker.getAttribute("gId")}`);
+  });
+  return loTargets;
+}
+
 function handleClick(event: MouseEvent) {
   event.preventDefault();
   const currentTarget = event.currentTarget as HTMLAnchorElement;
@@ -36,7 +44,7 @@ function handleClick(event: MouseEvent) {
   if (location.href != new URL(href).href) {
     update(
       location.pathname != new URL(href).pathname
-        ? ["&page"]
+        ? getLayoutTargets()
         : getParamTargets(location.href, href) || ["&x"],
       href,
       location.pathname != new URL(href).pathname,
@@ -188,7 +196,7 @@ export async function update(
 export function go(path: string, scrollToTop?: boolean) {
   const url = new URL(path, window.location.origin);
   scrollToTop = scrollToTop == null ? true : scrollToTop;
-  update(["&page"], url.toString(), scrollToTop)
+  update([...getLayoutTargets()], url.toString(), scrollToTop)
     .then((data) => {
       if (!("redirect" in data)) {
         history.pushState({}, "", url.toString());
@@ -209,7 +217,7 @@ function handlePopState() {
     const newUrl = location.toString();
     update(
       new URL(previousUrl).pathname != new URL(newUrl).pathname
-        ? ["&page"]
+        ? getLayoutTargets()
         : getParamTargets(previousUrl, newUrl) || ["&x"],
     ).catch(() => {});
   }
@@ -273,21 +281,21 @@ async function handleResponse(response: Response, scrollToTop?: boolean) {
     };
   }
   interface Partials {
-    [key: `/${string}`]: Partial;
+    [marker: string]: Partial;
   }
   interface Redirection {
     redirect: string;
     update: boolean;
   }
   const data = (await response.json()) as Partials | Redirection;
-  if ("redirect" in data) {
+  if ("redirect" in data && typeof data.redirect == "string") {
     history.pushState({}, "", data.redirect);
     if (data.update) {
-      const targets = ["&page"];
+      const targets = [...getLayoutTargets()];
       for (const target of JSON.parse(
         response.headers.get("Targets") || "[]",
       )) {
-        if (typeof target == "string" && targets.indexOf(target) !== -1) {
+        if (typeof target == "string" && targets.indexOf(target) === -1) {
           targets.push(target);
         }
       }
@@ -297,10 +305,10 @@ async function handleResponse(response: Response, scrollToTop?: boolean) {
     if (scrollToTop) {
       window.scrollTo(0, 0);
     }
-    for (const target in data) {
-      const partial = data[target] as Partial;
-      const markerStart = document.getElementById(`<${target}`);
-      if (markerStart instanceof Element) {
+    for (const marker in data) {
+      const partial = data[marker] as Partial;
+      const markerStart = document.getElementById(`<${marker}`);
+      if (markerStart) {
         for (const id in partial.css) {
           if (!document.querySelector(`[data-style-id="${id}"]`)) {
             const linkElement = document.createElement("link");
@@ -329,7 +337,7 @@ async function handleResponse(response: Response, scrollToTop?: boolean) {
           let next = markerStart.nextSibling;
           markerStart.remove();
           while (next) {
-            if (next instanceof Element && next.id == `>${target}`) {
+            if (next instanceof Element && next.id == `>${marker}`) {
               next.outerHTML = partial.html;
               break;
             } else {

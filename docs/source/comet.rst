@@ -6,7 +6,7 @@ The ``picomet.backends.picomet.PicometTemplates`` class implements Picomet's tem
 Layout
 ------
 
-A ``Layout`` is used by a page
+A ``Layout`` is used by a page or a nested layout
 
 .. code-block:: html
   :emphasize-lines: 9,10,11
@@ -19,9 +19,9 @@ A ``Layout`` is used by a page
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     </head>
     <body>
-      <div s-group="page">
+      <main>
         <Outlet />
-      </div>
+      </main>
     </body>
   </html>
 

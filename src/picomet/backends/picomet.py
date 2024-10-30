@@ -12,7 +12,7 @@ from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from django.utils.safestring import mark_safe
 
-from picomet.parser import CometParser
+from picomet.parser import parse
 from picomet.transformer import Transformer
 from picomet.types import Loops
 
@@ -35,8 +35,7 @@ class Template:
     def render(
         self, context: dict[str, Any], targets: list[str], keys: Loops
     ) -> dict | str:
-        parser = CometParser()
-        parser.feed(self.source, self.origin.name)
+        parser = parse(self.source, self.origin.name)
         transformer = Transformer(parser.ast, context, targets, keys)
         transformer.transform()
         return transformer.partials if len(targets) else transformer.compile_content()
