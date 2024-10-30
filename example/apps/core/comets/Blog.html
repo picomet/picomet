@@ -40,6 +40,7 @@
             class="py-1 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
             s-bind:x-prop:blog_slug="blog.slug"
             @click="call('core.delete_blog', {blog: blog_slug})"
+            s-csrf
           >
             Delete
           </button>
@@ -76,6 +77,7 @@
             s-bind:x-prop:liked="liked"
             s-bind:x-prop:blog_id="blog.id"
             @click="call(liked ? 'core.dislike' : 'core.like', {blog: blog_id})"
+            s-csrf
           >
             <svg
               s-if="liked"
@@ -118,6 +120,7 @@
             s-bind:x-prop:bookmarked="bookmarked"
             s-bind:x-prop:blog_id="blog.id"
             @click="call(bookmarked ? 'core.unbookmark' : 'core.bookmark', {blog: blog_id})"
+            s-csrf
           >
             <svg
               s-if="bookmarked"
@@ -189,6 +192,7 @@
               class="ms-auto p-1 rounded-md hover:bg-gray-200 active:bg-gray-300"
               s-bind:x-prop:comment_id="comment.id"
               @click="call('core.delete_comment', {comment: comment_id})"
+              s-csrf
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

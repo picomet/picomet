@@ -2,7 +2,6 @@ from django.contrib.auth import authenticate, login
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.views.decorators.csrf import ensure_csrf_cookie
 
 from core.decorators import normaluser_required
 from core.forms import AuthenticationForm, BlogForm, UserAddForm, UserProfileChangleForm
@@ -12,7 +11,6 @@ from picomet.http import PicometResponseRedirect
 from picomet.views import render
 
 
-@ensure_csrf_cookie
 @template("Home")
 def home(request: HttpRequest):
     context = {"blogs": Blog.objects.all().order_by("-created_at")}
@@ -20,7 +18,6 @@ def home(request: HttpRequest):
 
 
 @normaluser_required
-@ensure_csrf_cookie
 @template("User")
 def profile(request: HttpRequest):
     context = {"u": request.user}
@@ -28,7 +25,6 @@ def profile(request: HttpRequest):
 
 
 @normaluser_required
-@ensure_csrf_cookie
 @template("ProfileSettings")
 def profile_settings(request: HttpRequest):
     context = {}
@@ -42,7 +38,6 @@ def profile_settings(request: HttpRequest):
 
 
 @normaluser_required
-@ensure_csrf_cookie
 @template("AccountSettings")
 def account_settings(request: HttpRequest):
     context = {}
@@ -96,7 +91,6 @@ def new(request: HttpRequest):
     return render(request, context)
 
 
-@ensure_csrf_cookie
 @template("Blog")
 def blog(request: HttpRequest, slug):
     context = {"blog": get_object_or_404(Blog, slug=slug)}

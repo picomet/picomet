@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Literal, NotRequired, TypedDict, Unpack, cast
 
 from django.conf import settings
+from django.middleware.csrf import get_token
 from django.template.backends.django import Template
 from django.utils.safestring import SafeString
 
@@ -124,6 +125,8 @@ class Transformer:
         self.partials: dict[str, Partial] = {}
         self.c_target: str = ""
         self.groups: dict[str, EscGroupElement] = {}
+
+        self.csrf_set = False
 
     def transform(self) -> None:
         self.clean_targets()
@@ -372,6 +375,11 @@ class Transformer:
                     )
                 elif k == "s-for":
                     sfor = v
+                elif k == "s-csrf" and not self.csrf_set:
+                    request = self.context.get("request")
+                    if request:
+                        get_token(request)
+                        self.csrf_set = True
                 elif k.startswith("x-") and isAtrbEscaped(attr):
                     attrs.append(attr)
 

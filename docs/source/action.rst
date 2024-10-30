@@ -104,6 +104,7 @@ Create a Template and ``call`` the action from the client:
       <button
         s-bind:x-prop:blogId="blog.id"
         x-on:click="call('core.like_blog', {blog: blogId}, keys)"
+        s-csrf
       >
         like
       </button>

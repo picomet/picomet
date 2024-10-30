@@ -351,6 +351,15 @@ Toggle boolean attribute
 
   <button s-toggle:disabled="not user.is_authenticated"></button>
 
+s-csrf
+~~~~~~
+
+Set the ``csrftoken`` cookie for :doc:`/action` calls
+
+.. code-block:: html
+
+  <button x-on:click="call('core.hi', {})" s-csrf>hi</button>
+
 s-static:
 ~~~~~~~~~
 
