@@ -100,14 +100,14 @@ Targets
 s-group
 ~~~~~~~
 
-Picomet uses the ``s-group`` attribute to partially render parts of a page on the server.
+Picomet uses the ``s-group`` attribute to partially render specific parts of a page on the server.
 
 See how to use ``s-group`` in the :doc:`/action` guide.
 
 s-param
 ~~~~~~~
 
-When you navigate from ``/&bookmarksPage=1`` to ``/&bookmarksPage=2``, Picomet partially renders ``s-param="bookmarksPage"`` elements in that page.
+When you navigate from ``/&bookmarksPage=1`` to ``/&bookmarksPage=2``, Picomet partially renders elements with ``s-param="bookmarksPage"`` attribute in that page.
 
 
 Navigation
@@ -121,7 +121,7 @@ For navigation Picomet provides a custom Alpine.js directive named ``x-link``
     <a href="/about" x-link>About</a>
   </div>
 
-When navigating from a page to another page, picomet partially renders ``s-group="page"`` elements in that template on the server and returns a json of those partials.
+When navigating from a page to another page, picomet partially renders and updates the block using a common layout.
 
 
 Form
