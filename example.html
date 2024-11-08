@@ -1,0 +1,16 @@
+<Layout @="layouts/Base">
+  <Helmet>
+    <title>{{ blog.title }}</title>
+    <meta name="description" s-bind:content="blog.description" />
+  </Helmet>
+  <div class="container mx-auto">
+    <div class="text-center">
+      <h1 class="text-3xl font-bold">{{ blog.title }}</h1>
+      <a s-bind:href="f'/u/{blog.author.username}'" x-link>
+        {{ blog.author.name }}
+      </a>
+      <p>{{ blog.content }}</p>
+    </div>
+    <Include @="components/Share" .url="blog.get_absolute_url()" />
+  </div>
+</Layout>

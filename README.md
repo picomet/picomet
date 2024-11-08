@@ -24,6 +24,8 @@ Picomet allows you to build Single Page Applications (SPAs) with Server-Side Ren
 -   🖌️ Tailwind support
 -   ✨ Copier starter
 
+![Picomet](example.png)
+
 ## Getting Started
 
 Go to https://picomet.readthedocs.io for getting started
