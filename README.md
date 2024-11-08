@@ -20,7 +20,7 @@ Picomet allows you to build Single Page Applications (SPAs) with Server-Side Ren
 -   🏯 Nested layout
 -   ☎️ Server action
 -   ⚡ Hot module reload
--   🌲 Alpine.js support
+-   🌲 Alpinejs support
 -   🖌️ Tailwind support
 -   ✨ Copier starter
 
