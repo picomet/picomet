@@ -13,6 +13,8 @@ class StrStore:
 
 
 class StrCode:
+    __slots__ = ("string", "filename", "code")
+
     def __init__(self, string: str, filename: str):
         self.string = string
         self.filename = filename
