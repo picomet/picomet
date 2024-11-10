@@ -180,6 +180,7 @@ class Transformer:
                 sfor = None
 
                 store: dict[str, Any] = {}
+                reset: list[str] = []
                 if tag != "With" and tag != "Default":
                     condition = self.handle_conditionals(node, prevRtrn)
                     if not condition:
@@ -188,7 +189,7 @@ class Transformer:
                     for attr in node["attrs"]:
                         k, v = attr
                         if k == "s-context":
-                            self.handle_scontext(v, store)
+                            self.handle_scontext(v, store, reset)
                         elif k.startswith("s-prop:"):
                             self.handle_sprop(k, v, None, mode)
                         elif k == "x-data":
@@ -198,9 +199,9 @@ class Transformer:
                 if tag == "html" and self.ctx:
                     self.ctx.eval("var isServer = true;")
                 elif tag == "With":
-                    self.pack_with(node["attrs"], store)
+                    self.pack_with(node["attrs"], store, reset)
                 elif tag == "Default":
-                    self.pack_defaults(node["attrs"], store)
+                    self.pack_defaults(node["attrs"], store, reset)
 
                 if isNodeWithChildrens(node):
                     childrens = node["childrens"]
@@ -223,6 +224,7 @@ class Transformer:
                             mode=mode,
                             **kwargs,
                         )
+                self.reset_context(reset)
                 self.unpack_store(store)
                 return None
 
@@ -263,6 +265,7 @@ class Transformer:
         mark_attrs: EscapedAttrs = []
 
         store = {}
+        reset = []
         rtrn = True
 
         if tag != "With" and tag != "Default":
@@ -292,7 +295,7 @@ class Transformer:
                     attrs.append(("marker", edq(loc)))
                     attrs.append(attr)
                 elif k == "s-context":
-                    self.handle_scontext(v, store)
+                    self.handle_scontext(v, store, reset)
                 elif k.startswith("s-prop:"):
                     self.handle_sprop(k, v, attrs, mode)
                 elif k == "x-data" and isAtrbEscaped(attr):
@@ -393,9 +396,9 @@ class Transformer:
                 mark_attrs.append(("group", edq("layout")))
                 mark_attrs.append(("gId", edq(layout)))
         elif tag == "With":
-            self.pack_with(node["attrs"], store)
+            self.pack_with(node["attrs"], store, reset)
         elif tag == "Default":
-            self.pack_defaults(node["attrs"], store)
+            self.pack_defaults(node["attrs"], store, reset)
 
         if self.c_target:
             if tag == "Css" or tag == "Sass":
@@ -562,6 +565,7 @@ class Transformer:
                 self.current = element["parent"]
             if mark:
                 self.add_marker_end(loc)
+        self.reset_context(reset)
         self.unpack_store(store)
         return rtrn
 
@@ -591,13 +595,17 @@ class Transformer:
             )
             prevRtrn = rtrn if isNodeElement(children) else prevRtrn
 
-    def handle_scontext(self, v: AstAttrValue, store: dict[str, Any]) -> None:
+    def handle_scontext(
+        self, v: AstAttrValue, store: dict[str, Any], reset: list[str]
+    ) -> None:
         context_module, context_name = str(v).split(".")
         module = f"{context_module}.contexts"
         contexts = import_module(module)
         context = getattr(contexts, context_name)
         for k, v in context(self.context).items():
-            store[k] = self.context.get(k)
+            reset.append(k)
+            if k in self.context:
+                store[k] = self.context[k]
             self.context[k] = v
 
     def handle_conditionals(
@@ -690,7 +698,9 @@ class Transformer:
             array = eval(cast(StrCode, get_atrb(node, "s-in")).code, self.context)
 
         _loc = copy(loc)
-        outer = self.context.get(sfor)
+        store: dict[str, Any] = {}
+        if sfor in self.context:
+            store[sfor] = self.context[sfor]
         for index, item in enumerate(array):
             self.context[sfor] = item
             self.context["index"] = index
@@ -703,22 +713,33 @@ class Transformer:
                 ]
                 kwargs["loops"] = loops
             self.loop(childrens, _loc, **kwargs)
-        self.context[sfor] = outer
+        self.context.pop(sfor, None)
+        self.unpack_store(store)
         if len(array):
             return True
         return None
 
-    def pack_with(self, attrs: AstAttrs, store: dict[str, Any]) -> None:
+    def pack_with(
+        self, attrs: AstAttrs, store: dict[str, Any], reset: list[str]
+    ) -> None:
         for k, v in attrs:
             if isinstance(v, StrCode):
-                store[k] = self.context.get(k)
+                reset.append(k)
+                if k in self.context:
+                    store[k] = self.context[k]
                 self.context[k] = eval(v.code, self.context)
 
-    def pack_defaults(self, attrs: AstAttrs, store: dict[str, Any]) -> None:
+    def pack_defaults(
+        self, attrs: AstAttrs, store: dict[str, Any], reset: list[str]
+    ) -> None:
         for k, v in attrs:
-            if isinstance(v, StrCode) and not self.context.get(k):
-                store[k] = self.context.get(k)
+            if isinstance(v, StrCode) and k not in self.context:
+                reset.append(k)
                 self.context[k] = eval(v.code, self.context)
+
+    def reset_context(self, reset: list[str]) -> None:
+        for k in reset:
+            self.context.pop(k, None)
 
     def unpack_store(self, store: dict[str, Any]) -> None:
         for k in store:
