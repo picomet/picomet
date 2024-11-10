@@ -5,6 +5,13 @@ from django.template.backends.django import Template
 from typing_extensions import TypeIs
 
 
+class StrStore:
+    __slots__ = ("value",)
+
+    def __init__(self, value: str):
+        self.value: str = value
+
+
 class StrCode:
     def __init__(self, string: str, filename: str):
         self.string = string

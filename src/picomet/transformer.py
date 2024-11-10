@@ -23,6 +23,7 @@ from picomet.types import (
     EscapedAttrs,
     Loops,
     StrCode,
+    StrStore,
     isAtrbEscaped,
     isNodeElement,
     isNodeWithChildrens,
@@ -783,27 +784,27 @@ class Transformer:
         return False
 
     def compile_content(self) -> str:
-        content = {"html": ""}
+        html = StrStore("")
 
         def compile(
             node: EscAst | EscElementDoubleTag | EscElementSingleTag | str,
-            content: dict[str, str],
+            content: StrStore,
         ) -> None:
             if not isinstance(node, dict):
-                content["html"] += node
+                content.value += node
             else:
                 tag = node["tag"]
                 childrens = node.get("childrens")
                 attributes = self.join_attrs(node["attrs"])
                 if isinstance(childrens, list):
                     if tag and (tag not in EXCLUDES):
-                        content["html"] += f"<{tag}{attributes}>"
+                        content.value += f"<{tag}{attributes}>"
                     for children in childrens:
                         compile(children, content)
                     if tag and (tag not in EXCLUDES):
-                        content["html"] += f"</{tag}>"
+                        content.value += f"</{tag}>"
                 else:
-                    content["html"] += f"<{tag}{attributes} />"
+                    content.value += f"<{tag}{attributes} />"
 
-        compile(self.content, content)
-        return content["html"]
+        compile(self.content, html)
+        return html.value
