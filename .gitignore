@@ -9,6 +9,7 @@ __pycache__
 # django
 .picomet
 .env
+!example/.env
 *.sqlite3
 *.mo
 
