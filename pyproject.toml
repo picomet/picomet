@@ -24,7 +24,7 @@ keywords = ["picomet", "django", "nextjs"]
 
 [project.urls]
 Documentation = "https://picomet.readthedocs.io"
-Repository = "https://github.com/picomet/picomet"
+Source = "https://github.com/picomet/picomet"
 Funding = "https://buymeacoffee.com/almahdi404"
 
 [project.scripts]
