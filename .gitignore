@@ -13,9 +13,11 @@ __pycache__
 *.sqlite3
 *.mo
 
-# other
+# build
 build
-esbonio
 dist
+esbonio
+
+# other
 .DS_store
 *.tmp
