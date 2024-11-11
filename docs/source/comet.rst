@@ -1,7 +1,11 @@
 Comet
 =====
 
-The ``picomet.backends.picomet.PicometTemplates`` class implements Picomet's template backend API for Django.
+Comet is a template system for Picomet.
+
+The ``picomet.backends.picomet.PicometTemplates`` class implements the template backend for Django.
+
+The :ref:`picomet/comet.js <cometjs>` module provides comet templates it's client side SPA(Single Page Application) capabilities with the help of `Alpinejs <https://alpinejs.dev>`_.
 
 Layout
 ------
@@ -606,6 +610,8 @@ For tailwind to work, picomet requires 3 files.
     plugins: [tailwindcss],
   };
 
+
+.. _cometjs:
 
 Comet.js
 --------
