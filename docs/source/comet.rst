@@ -679,16 +679,16 @@ Use this function to call an action
 Learn more about ``call`` and ``actions`` in the :doc:`/action` guide.
 
 
-Alpine SSR
-----------
+Alpinejs SSR
+------------
 
-The cool thing about picomet is it's ability to render alpine.js on the server
+The cool thing about picomet is it's ability to render some Alpine.js directives on the server.
 
 .. note::
   Alpine.js directives supported on the server are ``x-data``, ``x-show``, ``x-text``, ``x-bind``. Learn more about these on `alpinejs.dev <https://alpinejs.dev>`_
 
 .. important::
-  To render Alpine.js syntax on the server Picomet requires `py-mini-racer <https://pypi.org/project/py-mini-racer>`_. Run ``pip install py-mini-racer``
+  To render Alpinejs syntax on the server Picomet requires `py-mini-racer <https://pypi.org/project/py-mini-racer>`_. Run ``pip install py-mini-racer``
 
 s-prop
 ~~~~~~
