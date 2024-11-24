@@ -1,7 +1,9 @@
 Action
 ======
 
-An ``action`` is a server function which is called from the client using the ``call`` function, it takes a HttpRequest object as an argument and returns a :ref:`Targets <targets>` list. Picomet uses that ``Target`` list to partially render a page.
+An ``action`` is a server function which is called from the client using the ``call`` function.
+
+The ``call`` function makes a ``POST`` request with a payload to the server. The action function takes the ``HttpRequest`` object as an argument and can peform any operation, then should return a :ref:`Targets <targets>` list. Picomet uses that ``Targets`` list to partially render the specific target elements on the server. Then the partialls are sent as the response to be updated on the client.
 
 Call
 ----
