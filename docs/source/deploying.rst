@@ -1,14 +1,23 @@
 Deploying
 =========
 
-Install requirements
-~~~~~~~~~~~~~~~~~~~~
 
-Install the production requirements
+Install uv
+~~~~~~~~~~
 
 .. code-block:: bash
 
-  pip install -r requirements.txt
+  pip install uv
+
+Install dependencies
+~~~~~~~~~~~~~~~~~~~~
+
+Install the production dependencies
+
+.. code-block:: bash
+
+  uv export --frozen > requirements.txt
+  uv pip install -r requirements.txt
 
 If using Tailwind, TypeScript or Sass etc.
 

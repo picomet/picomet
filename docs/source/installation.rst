@@ -1,56 +1,33 @@
 Installation
 ============
 
+**Requirements**
+
+-   `Python <https://www.python.org/downloads>`_ 3.12 or later
+-   `uv <https://docs.astral.sh/uv/getting-started/installation>`_ 0.5.0 or later
+
 **1.**
-Create your project folder and ``cd`` into it
+Scaffold a new project
 
 .. code-block:: shell
 
-  cd projectfolder
+  uvx --with copier -p 3.12 picomet startproject my-project
+
+Then choose from the given options to customize your project. You can also just press enter to go with the defaults.
 
 **2.**
-Now create a virtual environment named ``env``
+Enter into the project folder
 
 .. code-block:: shell
 
-  python -m venv env
+  cd my-project
 
 **3.**
-Activate the virtual environment
-
-  On Windows
-
-  .. code-block:: shell
-
-    env\Scripts\activate.bat
-
-  On Linux/Mac
-
-  .. code-block:: shell
-
-    source env/bin/activate
-
-
-**4.**
-Install `picomet <https://pypi.org/project/picomet>`_ and `copier <https://pypi.org/project/copier>`_
+Install the dev dependencies
 
 .. code-block:: shell
 
-  pip install picomet copier
-
-**5.**
-Generate the project
-
-.. code-block:: shell
-
-  picomet startproject
-
-**6.**
-Install the project requirements
-
-.. code-block:: shell
-
-  pip install -r requirements/dev.txt
+  uv sync --group dev
 
 If using **Tailwind**
 
@@ -58,12 +35,12 @@ If using **Tailwind**
 
   npm i
 
-**7.**
+**4.**
 Start the development server
 
 .. code-block:: shell
 
-  python manage.py runserver
+  uv run manage.py runserver
 
 
 Now go to http://localhost:8000 with your web browser to see it running.

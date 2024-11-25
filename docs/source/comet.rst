@@ -265,7 +265,7 @@ Load it in a :ref:`Group <group>`
   </div>
 
 .. important::
-  ``Sass`` requires `sass <https://npmjs.com/package/sass>`_  and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i sass`` and ``pip install javascript``
+  ``Sass`` requires `sass <https://npmjs.com/package/sass>`_  and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i sass`` and ``uv add javascript``
 
 Js
 ~~~
@@ -302,7 +302,7 @@ Ts
   <button @click="say('hello')">say hello</button>
 
 .. important::
-  ``Ts`` requires `esbuild <https://npmjs.com/package/esbuild>`_  and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i esbuild`` and ``pip install javascript``
+  ``Ts`` requires `esbuild <https://npmjs.com/package/esbuild>`_  and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i esbuild`` and ``uv add javascript``
 
 s-asset:
 ~~~~~~~~
@@ -578,7 +578,7 @@ Tailwind
   The ``Tailwind`` tag must be inside the head tag.
 
 .. important::
-  ``Tailwind`` requires `tailwindcss <https://npmjs.com/package/tailwindcss>`_ and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i tailwindcss`` and ``pip install javascript``
+  ``Tailwind`` requires `tailwindcss <https://npmjs.com/package/tailwindcss>`_ and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i tailwindcss`` and ``uv add javascript``
 
 .. note::
   To minify the css on production, just do ``npm i cssnano``
@@ -688,7 +688,7 @@ The cool thing about picomet is it's ability to render some Alpine.js directives
   Alpine.js directives supported on the server are ``x-data``, ``x-show``, ``x-text``, ``x-bind``. Learn more about these on `alpinejs.dev <https://alpinejs.dev>`_
 
 .. important::
-  To render Alpinejs syntax on the server Picomet requires `py-mini-racer <https://pypi.org/project/py-mini-racer>`_. Run ``pip install py-mini-racer``
+  To render Alpinejs syntax on the server Picomet requires `py-mini-racer <https://pypi.org/project/py-mini-racer>`_. Run ``uv add py-mini-racer``
 
 s-prop
 ~~~~~~

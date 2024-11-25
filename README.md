@@ -26,6 +26,12 @@ Picomet allows you to build Single Page Applications (SPAs) with Server-Side Ren
 
 ![Picomet](example.png)
 
+## Installation
+
+```bash
+uvx --with copier -p 3.12 picomet startproject my-project
+```
+
 ## Getting Started
 
 Go to https://picomet.readthedocs.io for getting started

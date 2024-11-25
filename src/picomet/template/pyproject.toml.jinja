@@ -1,0 +1,44 @@
+[project]
+name = "{{ PROJECT_NAME }}"
+version = "1.0.0"
+requires-python = ">=3.12"
+
+[tool.uv]
+default-groups = ["base"]
+
+[dependency-groups]
+base = [
+  "Django=={{ DJANGO_VERSION }}"{% if Tailwind %},
+  "javascript==1!1.1.3"{% endif %}{% if DB=="Mysql" %},
+  "mysqlclient==2.2.4"
+  {% endif %},
+  "picomet=={{ PICOMET_VERSION }}"{% if DB=="Postgresql" %},
+  "psycopg2-binary==2.9.9"{% endif %}{% if ASSR %},
+  "py-mini-racer==0.6.0"{% endif %},
+  "python-decouple==3.8"
+]
+dev = [
+  "channels==4.0.0",
+  "daphne==4.1.2"{% if Precommit %},
+  "pre-commit==4.0.1"{% endif %}{% if Ruff %},
+  "ruff==0.6.9"{% endif %},
+  "watchdog==4.0.0"
+]{% if Ruff %}
+
+[tool.ruff]
+fix = true
+exclude = ["env", "node_modules"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "UP", "F", "I", "DJ"]
+fixable = ["I"]
+
+[tool.ruff.lint.isort]
+section-order = [
+  "future",
+  "standard-library",
+  "third-party",
+  "first-party",
+  "local-folder",
+]
+known-first-party = ["core"]{% endif %}

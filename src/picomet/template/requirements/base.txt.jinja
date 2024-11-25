@@ -1,8 +1,0 @@
-Django=={{ DJANGO_VERSION }}{% if Tailwind %}
-javascript==1!1.1.3{% endif %}{% if DB=="Mysql" %}
-mysqlclient==2.2.4
-{% endif %}
-picomet=={{ PICOMET_VERSION }}{% if DB=="Postgresql" %}
-psycopg2-binary==2.9.9{% endif %}{% if ASSR %}
-py-mini-racer==0.6.0{% endif %}
-python-decouple==3.8
