@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -o errexit
+
+npm ci
+python{{ PYTHON_VERSION }} -m pip install uv
+python{{ PYTHON_VERSION }} -m uv export --frozen > requirements.txt
+python{{ PYTHON_VERSION }} -m uv pip install -r requirements.txt
+
+export NODE_PATH=$(pwd)/node_modules
+python{{ PYTHON_VERSION }} manage.py build --verbose
+python{{ PYTHON_VERSION }} manage.py collectstatic --no-input
+python{{ PYTHON_VERSION }} manage.py migrate

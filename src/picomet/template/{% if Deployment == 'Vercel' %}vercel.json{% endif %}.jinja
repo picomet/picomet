@@ -1,0 +1,24 @@
+{
+  "builds": [
+    {
+      "src": "build.sh",
+      "use": "@vercel/static-build",
+      "config": { "distDir": ".picomet" }
+    },
+    {
+      "src": "project/wsgi.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python{{ PYTHON_VERSION }}",
+        "includeFiles": ".picomet/**"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "project/wsgi.py"
+    }
+  ],
+  "regions": ["lhr1"]
+}

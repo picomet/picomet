@@ -30,6 +30,13 @@ VSCode:
   type: bool
   help: Configure VSCode
   default: yes
+Deployment:
+  type: str
+  help: Choose deployment
+  choices:
+    - None
+    - Vercel
+  default: None
 
 _jinja_extensions:
   - picomet.copier.VarsExtension

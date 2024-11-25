@@ -1,3 +1,4 @@
+import sys
 from importlib.metadata import version
 
 from django.core.management.utils import get_random_secret_key
@@ -10,6 +11,8 @@ class VarsExtension(Extension):
 
     def __init__(self, environment: Environment) -> None:
         super().__init__(environment)
+        py = sys.version_info
+        environment.globals["PYTHON_VERSION"] = f"{py.major}.{py.minor}"
         environment.globals["DJ_SECRET_KEY"] = get_random_secret_key()
         environment.globals["PICOMET_VERSION"] = version("picomet")
         environment.globals["DJANGO_VERSION"] = version("django")
