@@ -13,7 +13,7 @@ Layout
 A ``Layout`` is used by a page or a nested layout
 
 .. code-block:: html
-  :emphasize-lines: 9,10,11
+  :emphasize-lines: 10
 
   <!-- comets/Base.html -->
   <!doctype html>
@@ -616,7 +616,7 @@ For tailwind to work, picomet requires 3 files.
 Comet.js
 --------
 
-The ``picomet/comet.js`` module provides comet templates it's client side routing and partial updating capabilities.
+The ``picomet/comet.js`` module provides comet templates it's client side **routing**, **partial updating** etc capabilities.
 
 It also provides some utility functions to help you update your pages.
 
