@@ -34,7 +34,7 @@ uvx --with copier -p 3.12 picomet startproject my-project
 
 Go to [picomet.readthedocs.io](https://picomet.readthedocs.io) for getting started
 
-> **Tip** : Picomet isn't stable at this moment. Stability is expected with the 1.0.0 release. Remember to run `uv remove picomet --group base && uv add picomet --group base` from time to time, to get the latest features and bug fixes.
+> **Tip** : Picomet isn't stable at this moment. Stability is expected with the 1.0.0 release. Remember to update **picomet** from time to time, to get the latest features and bug fixes.
 
 ## Contribution Guideline
 
