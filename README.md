@@ -26,6 +26,8 @@ Picomet allows you to build Single Page Applications (SPAs) with Server-Side Ren
 
 ## Installation
 
+Get [uv](https://docs.astral.sh/uv) from **Astral**
+
 ```bash
 uvx --with copier -p 3.12 picomet startproject my-project
 ```
