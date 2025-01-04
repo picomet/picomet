@@ -1,32 +1,42 @@
 from hashlib import md5
 from types import CodeType
-from typing import Any
+from typing import Any, Protocol
+
+from htmst.structures import Pos
 
 from picomet.types import (
     AstAttrs,
+    AstAttrsDynamic,
+    AstElWithAttrs,
     DoubleQuoteEscapedStr,
-    ElementWithAttrs,
-    PureAttrs,
+    Span,
     StrCode,
+    Undefined,
+    UndefinedType,
 )
 
 
-def has_atrb(attrs: list[tuple[str, Any]], names: list[str]) -> bool:
-    for k, v in attrs:
+def has_atrb(attrs: AstAttrs | AstAttrsDynamic, names: list[str]) -> bool:
+    for k, v, span in attrs:
         if k in names:
             return True
     return False
 
 
 def get_atrb(
-    obj: ElementWithAttrs | AstAttrs | PureAttrs, name: str, default: str | bool = False
-) -> DoubleQuoteEscapedStr | StrCode | None | str | bool:
-    attrs: AstAttrs | PureAttrs
+    obj: AstElWithAttrs | AstAttrs,
+    name: str,
+    default: DoubleQuoteEscapedStr | UndefinedType = Undefined,
+) -> DoubleQuoteEscapedStr | StrCode | None | UndefinedType:
+    attrs: AstAttrs
     if isinstance(obj, dict):
         attrs = obj["attrs"]
     else:
         attrs = obj
-    return next(filter(lambda attr: attr[0] == name, attrs), [name, default])[1]
+    for attr in attrs:
+        if attr[0] == name:
+            return attr[1]
+    return default
 
 
 def set_atrb(
@@ -47,13 +57,25 @@ def remove_atrb(attrs: list[tuple[str, Any]], name: str) -> None:
             del attrs[index]
 
 
+class Node(Protocol):
+    start: Pos
+    end: Pos
+
+
+def get_span(node: Node) -> Span:
+    return {
+        "start": node.start.to_json(),
+        "end": node.end.to_json(),
+    }
+
+
 def mdhash(string: str, length: int) -> str:
     return md5(string.encode()).hexdigest()[:length]
 
 
 def escape_double_quote(s: str) -> DoubleQuoteEscapedStr:
     """
-    Replace double quote (") character to HTML-safe sequence.
+    Replace double quote (") characters to HTML-safe sequence.
     """
     s = s.replace('"', "&quot;")
     return DoubleQuoteEscapedStr(s)

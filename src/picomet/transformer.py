@@ -1,42 +1,39 @@
+import sys
 from copy import copy, deepcopy
 from html import escape
 from importlib import import_module
 from json import dumps, loads
 from pathlib import Path
-from typing import Any, Literal, NotRequired, TypedDict, Unpack, cast
+from typing import Any, Literal, TypedDict, Unpack, cast
 
 from django.conf import settings
 from django.middleware.csrf import get_token
+from django.template import loader
 from django.template.backends.django import Template
 from django.utils.safestring import SafeString
 
-from picomet.parser import STATIC_URL, asset_cache
+from picomet.parser import STATIC_URL, asset_cache, parse
 from picomet.types import (
     Ast,
+    AstAttr,
     AstAttrs,
+    AstAttrsDynamic,
     AstAttrValue,
     AstElement,
+    AstElWithAttrs,
+    AstMap,
     AstNode,
     DoubleQuoteEscapedStr,
     ElementDoubleTag,
-    ElementWithAttrs,
     EscapedAttrs,
     Loops,
     StrCode,
     StrStore,
-    isAtrbEscaped,
     isNodeElement,
-    isNodeWithChildrens,
+    isNodeWithChildren,
 )
-from picomet.utils import (
-    escape_double_quote as edq,
-)
-from picomet.utils import (
-    get_atrb,
-    has_atrb,
-    remove_atrb,
-    set_atrb,
-)
+from picomet.utils import escape_double_quote as edq
+from picomet.utils import get_atrb, has_atrb, remove_atrb, set_atrb
 
 try:
     from py_mini_racer import MiniRacer
@@ -46,22 +43,22 @@ except ImportError:
 BASE_DIR: Path = settings.BASE_DIR
 DEBUG: bool = settings.DEBUG
 
-EXCLUDES = {
-    t: t for t in ["Outlet", "Fragment", "With", "Default", "Children", "Group"]
-}
+RUNSERVER = len(sys.argv) > 1 and sys.argv[1] == "runserver"
+
+WRAPPERS = {t: t for t in ["Outlet", "Fragment", "With", "Default", "Group"]}
 
 
 class EscAst(TypedDict):
     tag: str
     attrs: EscapedAttrs
-    childrens: list["EscElementDoubleTag | EscElementSingleTag | str"]
+    children: list["EscElementDoubleTag | EscElementSingleTag | str"]
     parent: None
 
 
 class EscElementDoubleTag(TypedDict):
     tag: str
     attrs: EscapedAttrs
-    childrens: list["EscElementDoubleTag | EscElementSingleTag | str"]
+    children: list["EscElementDoubleTag | EscElementSingleTag | str"]
     parent: "EscAst | EscElementDoubleTag"
 
 
@@ -74,7 +71,7 @@ class EscElementSingleTag(TypedDict):
 class EscGroupElement(TypedDict):
     tag: str
     attrs: EscapedAttrs
-    childrens: list[EscElementDoubleTag | EscElementSingleTag]
+    children: list[EscElementDoubleTag | EscElementSingleTag]
     parent: EscElementDoubleTag
 
 
@@ -88,38 +85,43 @@ class Partial(TypedDict):
 
 
 class TransformKwargs(TypedDict):
-    index: NotRequired[int]
-    file: str
+    loops: Loops
+    propAttrs: list[AstAttr]
+    propChildren: list[list[AstNode]]
 
 
 class LoopKwargs(TypedDict):
-    index: int
-    loops: list[tuple[str, int]]
-    file: str
     mode: Mode
+    propAttrs: list[AstAttr]
+    propChildren: list[list[AstNode]]
 
 
 class SforKwargs(TypedDict):
-    loops: list[tuple[str, int]]
-    index: int
     depth: int | None
     mode: Mode
-    file: str
+    propAttrs: list[AstAttr]
+    propChildren: list[list[AstNode]]
 
 
 class Transformer:
     def __init__(
-        self, ast: Ast, context: dict[str, Any], targets: list[str], keys: Loops
+        self,
+        ast: Ast,
+        map: AstMap,
+        context: dict[str, Any],
+        targets: list[str],
+        keys: Loops,
     ):
-        self.ast = ast
-        self.context = context
+        self.ast: Ast = ast
+        self.map: AstMap = map
+        self.context: dict[str, Any] = context
         self.ctx = None
-        self.targets = targets
+        self.targets: list[str] = targets
         self.keys: Loops = keys
         self.content: EscAst = {
             "tag": "Fragment",
             "attrs": [],
-            "childrens": [],
+            "children": [],
             "parent": None,
         }
         self.current: EscAst | EscElementDoubleTag = self.content
@@ -131,7 +133,7 @@ class Transformer:
 
     def transform(self) -> None:
         self.clean_targets()
-        self._transform(self.ast, "", file=self.ast["file"])
+        self._transform(self.ast, "", loops=[], propChildren=[], propAttrs=[])
 
     def clean_targets(self) -> None:
         targets: list[str] = []
@@ -141,7 +143,7 @@ class Transformer:
             if not target.startswith("+"):
                 targets.append(target)
             else:
-                loLoc = self.ast["map"]["layouts"].get(target[1:], [])
+                loLoc = self.map["layouts"].get(target[1:], [])
                 if len(loLoc) > len(layoutLoc):
                     layoutLoc = loLoc
                     layoutId = target[1:]
@@ -153,17 +155,60 @@ class Transformer:
         self,
         node: AstNode,
         loc: str,
-        loops: Loops = [],
         depth: int | None = None,
         prevRtrn: bool | None = None,
         mode: Mode = "client",
         **kwargs: Unpack[TransformKwargs],
     ) -> bool | None:
+        store: dict[str, Any]
+        reset: list[str]
+        if isNodeElement(node):
+            tag = node["tag"]
+            comet: str
+            if isNodeWithChildren(node):
+                if tag in ["Layout", "Include"]:
+                    at = get_atrb(node, "@")
+                    if isinstance(at, str):
+                        comet = at
+                        if not comet.endswith(".html"):
+                            comet = f"{comet}.html"
+                        template = loader.get_template(comet, using="picomet").template
+                        ast = parse(template.source, template.origin.name).ast
+                        withs, props = self.sort_props(node["attrs"])
+                        store, reset = {}, []
+                        self.pack_with(withs, store, reset)
+                        kwargs["propAttrs"] = props
+                        kwargs.setdefault("propChildren", [])
+                        kwargs["propChildren"].append(node["children"])
+                        self._transform(ast, loc, depth, mode=mode, **kwargs)
+                        self.reset_context(reset)
+                        self.unpack_store(store)
+                    return True
+            elif tag == "Include":
+                at = get_atrb(node, "@")
+                if isinstance(at, str):
+                    comet = at
+                    if not comet.endswith(".html"):
+                        comet = f"{comet}.html"
+                    template = loader.get_template(comet, using="picomet").template
+                    ast = parse(template.source, template.origin.name).ast
+                    withs, props = self.sort_props(node["attrs"])
+                    store, reset = {}, []
+                    self.pack_with(withs, store, reset)
+                    kwargs["propAttrs"] = props
+                    self._transform(ast, loc, depth=depth, mode=mode, **kwargs)
+                    self.reset_context(reset)
+                    self.unpack_store(store)
+                return True
+            elif tag == "Children":
+                propChildren = kwargs["propChildren"].pop()
+                self.loop(propChildren, loc=loc, depth=depth, mode=mode, **kwargs)
+                return True
         if len(self.targets) and not self.c_target:
             if not isNodeElement(node):
                 return None
-            GROUPS = cast(str, get_atrb(node, "s-group", default="")).split(",")
-            PARAMS = cast(str, get_atrb(node, "s-param", default="")).split(",")
+            GROUPS = cast(str, get_atrb(node, "s-group", default=edq(""))).split(",")
+            PARAMS = cast(str, get_atrb(node, "s-param", default=edq(""))).split(",")
             tag = node["tag"]
             if (
                 any(f"&{group}" in self.targets for group in GROUPS)
@@ -175,20 +220,20 @@ class Transformer:
                 self.partials[loc] = {"html": "", "css": {}, "js": {}}
                 self.c_target = loc
             else:
-                mode = cast(Mode, get_atrb(node, "mode", default=mode))
+                attrs = AstAttrsDynamic(node["attrs"], kwargs["propAttrs"])
+                mode = cast(Mode, get_atrb(node, "mode", default=edq(mode)))
                 if mode == "server" and self.ctx is None:
                     self.ctx = MiniRacer()
                 sfor = None
 
-                store: dict[str, Any] = {}
-                reset: list[str] = []
-                if tag != "With" and tag != "Default":
+                store, reset = {}, []
+                if tag not in ["With", "Default"]:
                     condition = self.handle_conditionals(node, prevRtrn)
                     if not condition:
                         return condition
 
-                    for attr in node["attrs"]:
-                        k, v = attr
+                    for attr in attrs:
+                        k, v, span = attr
                         if k == "s-context":
                             self.handle_scontext(v, store, reset)
                         elif k.startswith("s-prop:"):
@@ -204,27 +249,14 @@ class Transformer:
                 elif tag == "Default":
                     self.pack_defaults(node["attrs"], store, reset)
 
-                if isNodeWithChildrens(node):
-                    childrens = node["childrens"]
+                if isNodeWithChildren(node):
+                    children = node["children"]
                     if sfor:
                         self.handle_sfor(
-                            node,
-                            childrens,
-                            loc,
-                            depth=depth,
-                            loops=loops,
-                            mode=mode,
-                            **kwargs,
+                            node, children, loc, depth=depth, mode=mode, **kwargs
                         )
                     else:
-                        self.loop(
-                            childrens,
-                            loc,
-                            depth=depth,
-                            loops=loops,
-                            mode=mode,
-                            **kwargs,
-                        )
+                        self.loop(children, loc, depth=depth, mode=mode, **kwargs)
                 self.reset_context(reset)
                 self.unpack_store(store)
                 return None
@@ -233,7 +265,7 @@ class Transformer:
             if self.c_target:
                 self.partials[self.c_target]["html"] += node
             else:
-                self.current["childrens"].append(node)
+                self.current["children"].append(node)
             return None
         elif isinstance(node, StrCode):
             e = eval(node.code, self.context)
@@ -244,94 +276,101 @@ class Transformer:
             if self.c_target:
                 self.partials[self.c_target]["html"] += string
             else:
-                self.current["childrens"].append(string)
+                self.current["children"].append(string)
             return None
         elif isinstance(node, Template):
             string = node.render(self.context)
             if self.c_target:
                 self.partials[self.c_target]["html"] += string
             else:
-                self.current["childrens"].append(string)
+                self.current["children"].append(string)
             return None
 
-        mode = cast(Mode, get_atrb(node, "mode", default=mode))
+        mode = cast(Mode, get_atrb(node, "mode", default=edq(mode)))
         if mode == "server" and self.ctx is None:
             self.ctx = MiniRacer()
         tag = node["tag"]
-        attrs: EscapedAttrs = []
+        attrs = AstAttrsDynamic(node["attrs"], kwargs["propAttrs"])
+        eattrs: EscapedAttrs = []
 
         text = None
         sfor = None
         mark = (node.get("file") and not node.get("isBase")) if DEBUG else False
         mark_attrs: EscapedAttrs = []
 
-        store = {}
-        reset = []
+        store: dict[str, Any] = {}
+        reset: list[str] = []
         rtrn = True
 
-        if tag != "With" and tag != "Default":
+        if tag not in ["With", "Default"]:
             condition = self.handle_conditionals(node, prevRtrn)
             if not condition:
-                if has_atrb(node["attrs"], ["s-group", "s-param", "x-form"]):
+                if has_atrb(attrs, ["s-group", "s-param", "x-form"]):
                     self.add_marker_start(loc, mark_attrs)
                     self.add_marker_end(loc)
                     if loc == self.c_target:
                         self.c_target = ""
                 return condition
 
-            for attr in node["attrs"]:
-                k, v = attr
+            for attr in attrs:
+                k, v, span = attr
                 if not k.startswith("x-") and not k.startswith("s-") and k != "mode":
                     if isinstance(v, str):
-                        attrs.append((k, DoubleQuoteEscapedStr(v)))
+                        eattrs.append((k, DoubleQuoteEscapedStr(v)))
                     elif v is None:
-                        attrs.append((k, v))
+                        eattrs.append((k, v))
 
-            for attr in node["attrs"]:
-                k, v = attr
+            for attr in attrs:
+                k, v, span = attr
                 if k == "s-group" or k == "s-param":
                     mark = True
-                elif k == "x-form" and isAtrbEscaped(attr):
+                elif k == "x-form" and isinstance(v, str | type(None)):
                     mark = True
-                    attrs.append(("marker", edq(loc)))
-                    attrs.append(attr)
+                    eattrs.append(("marker", edq(loc)))
+                    eattrs.append((k, v))
                 elif k == "s-context":
                     self.handle_scontext(v, store, reset)
                 elif k.startswith("s-prop:"):
-                    self.handle_sprop(k, v, attrs, mode)
-                elif k == "x-data" and isAtrbEscaped(attr):
-                    attrs.append(attr)
+                    self.handle_sprop(k, v, eattrs, mode)
+                elif k == "x-data" and isinstance(v, str | type(None)):
+                    eattrs.append((k, v))
                     self.handle_xdata(v, mode)
-                elif k == "x-show" and isAtrbEscaped(attr):
-                    attrs.append(attr)
+                elif k == "x-show" and isinstance(v, str | type(None)):
+                    eattrs.append((k, v))
                     if mode == "server" and self.ctx and not self.ctx.eval(v):
-                        style = get_atrb(attrs, "style", default="")
+                        style = get_atrb(eattrs, "style", default="")
                         styles = style.split(";") if style else []
                         styles.append("display:none!important")
-                        set_atrb(attrs, "style", ";".join(styles))
+                        set_atrb(eattrs, "style", ";".join(styles))
                 elif k == "s-text":
-                    v = cast(StrCode, v)
-                    text = escape(eval(v.code, self.context), quote=False)
-                elif k == "x-text" and isAtrbEscaped(attr):
-                    attrs.append(attr)
+                    if isinstance(v, StrCode):
+                        text = escape(eval(v.code, self.context), quote=False)
+                elif k == "x-text" and isinstance(v, str | type(None)):
+                    eattrs.append((k, v))
                     if mode == "server" and self.ctx:
                         text = escape(self.ctx.eval(v), quote=False)
                 elif k.startswith("s-bind:"):
-                    v = cast(StrCode, v)
-                    if k.split(":")[1] == "class":
+                    if isinstance(v, StrCode) and k.split(":")[1] == "class":
                         set_atrb(
-                            attrs,
+                            eattrs,
                             "class",
                             self.add_classes(
-                                cast(str, get_atrb(attrs, "class", default="")),
+                                cast(
+                                    str,
+                                    self.get_atrb(
+                                        eattrs,
+                                        "class",
+                                        default=DoubleQuoteEscapedStr(""),
+                                    ),
+                                ),
                                 [str(eval(v.code, self.context))],
                             ),
                         )
-                    else:
+                    elif isinstance(v, StrCode):
                         value = eval(v.code, self.context)
                         if k.split(":")[1] == "x-prop":
                             value = dumps(value)
-                        attrs.append(
+                        eattrs.append(
                             (
                                 ":".join(k.split(":")[1:]),
                                 edq(str(value)),
@@ -341,9 +380,9 @@ class Transformer:
                     if isinstance(v, StrCode):
                         val = eval(v.code, self.context)
                         if val is True:
-                            attrs.append((":".join(k.split(":")[1:]), None))
-                elif k.startswith("x-bind:") and isAtrbEscaped(attr):
-                    attrs.append(attr)
+                            eattrs.append((":".join(k.split(":")[1:]), None))
+                elif k.startswith("x-bind:") and isinstance(v, str | type(None)):
+                    eattrs.append((k, v))
                     if mode == "server" and self.ctx:
                         if k.split(":")[1] == "class":
                             if v.startswith("{"):
@@ -351,27 +390,27 @@ class Transformer:
                                     f"var classes = {v}; var klasses = []; for (let k in classes) {{ if (classes[k]) {{klasses.push(k)}} }};"
                                 )
                                 set_atrb(
-                                    attrs,
+                                    eattrs,
                                     "class",
                                     self.add_classes(
-                                        get_atrb(attrs, "class", default=""),
+                                        get_atrb(eattrs, "class", default=""),
                                         loads(self.ctx.eval("JSON.stringify(klasses)")),
                                     ),
                                 )
                             else:
                                 set_atrb(
-                                    attrs,
+                                    eattrs,
                                     "class",
                                     edq(str(self.ctx.eval(v))),
                                 )
                         else:
                             val = self.ctx.eval(v)
                             if val is not False:
-                                attrs.append((k.split(":")[1], edq(str(val))))
+                                eattrs.append((k.split(":")[1], edq(str(val))))
                 elif k == "s-k" or k == "s-keys":
-                    attrs.append(("x-prop:keys", edq(dumps(loops))))
+                    eattrs.append(("x-prop:keys", edq(dumps(kwargs["loops"]))))
                 elif k.startswith("s-asset:"):
-                    attrs.append(
+                    eattrs.append(
                         (
                             k.split(":")[1],
                             edq(f"{STATIC_URL}{asset_cache[str(v)][0]}"),
@@ -384,16 +423,16 @@ class Transformer:
                     if request:
                         get_token(request)
                         self.csrf_set = True
-                elif k.startswith("x-") and isAtrbEscaped(attr):
-                    attrs.append(attr)
+                elif k.startswith("x-") and isinstance(v, str | type(None)):
+                    eattrs.append((k, v))
 
         if tag == "html" and self.ctx:
             self.ctx.eval("var isServer = true;")
-            attrs.append(("x-data", "{isServer: false, keys: []}"))
+            eattrs.append(("x-data", "{isServer: false, keys: []}"))
         elif tag == "Outlet":
             mark = True
-            layout = cast(str, get_atrb(node, "layout"))
-            if layout:
+            layout = get_atrb(node, "layout")
+            if isinstance(layout, str):
                 mark_attrs.append(("group", edq("layout")))
                 mark_attrs.append(("gId", edq(layout)))
         elif tag == "With":
@@ -413,37 +452,24 @@ class Transformer:
                     f"{STATIC_URL}{fname}"
                 )
             else:
-                attributes = self.join_attrs(attrs)
+                attributes = self.join_attrs(eattrs)
                 if mark:
                     self.add_marker_start(loc, mark_attrs)
-                if isNodeWithChildrens(node):
-                    childrens = node["childrens"]
-                    if tag and (tag not in EXCLUDES):
+                if isNodeWithChildren(node):
+                    children = node["children"]
+                    if tag and (tag not in WRAPPERS):
                         self.partials[self.c_target]["html"] += f"<{tag}{attributes}>"
                     if sfor:
                         node = cast(ElementDoubleTag, node)
                         if not self.handle_sfor(
-                            node,
-                            childrens,
-                            loc=loc,
-                            loops=loops,
-                            depth=depth,
-                            mode=mode,
-                            **kwargs,
+                            node, children, loc, depth=depth, mode=mode, **kwargs
                         ):
                             rtrn = False
                     elif text:
                         self.partials[self.c_target]["html"] += text
                     else:
-                        self.loop(
-                            childrens,
-                            loc=loc,
-                            loops=loops,
-                            depth=depth,
-                            mode=mode,
-                            **kwargs,
-                        )
-                    if tag and (tag not in EXCLUDES):
+                        self.loop(children, loc, depth=depth, mode=mode, **kwargs)
+                    if tag and (tag not in WRAPPERS):
                         self.partials[self.c_target]["html"] += f"</{tag}>"
                 else:
                     self.partials[self.c_target]["html"] += f"<{tag}{attributes} />"
@@ -455,10 +481,10 @@ class Transformer:
         elif tag == "Css" or tag == "Sass":
             fname, compiled = asset_cache[cast(str, get_atrb(node, "@"))]
             asset_id = edq(fname.split(".")[0])
-            assets = self.groups[cast(str, get_atrb(node, "group"))]["childrens"]
+            assets = self.groups[cast(str, get_atrb(node, "group"))]["children"]
             exists = False
             for asset in assets:
-                if get_atrb(cast(ElementWithAttrs, asset), "data-style-id") == asset_id:
+                if get_atrb(cast(AstElWithAttrs, asset), "data-style-id") == asset_id:
                     exists = True
             if not exists:
                 if settings.DEBUG:
@@ -478,21 +504,21 @@ class Transformer:
                         {
                             "tag": "style",
                             "attrs": [("data-style-id", asset_id)],
-                            "childrens": [compiled],
+                            "children": [compiled],
                             "parent": self.current,
                         }
                     )
         elif tag == "Js" or tag == "Ts":
             fname, _ = asset_cache[cast(str, get_atrb(node, "@"))]
             asset_id = edq(fname.split(".")[0])
-            remove_atrb(attrs, "@")
-            attrs.append(("type", edq("module")))
-            attrs.append(("data-script-id", asset_id))
-            self.current["childrens"].append(
+            remove_atrb(eattrs, "@")
+            eattrs.append(("type", edq("module")))
+            eattrs.append(("data-script-id", asset_id))
+            self.current["children"].append(
                 {
                     "tag": "script",
-                    "attrs": attrs,
-                    "childrens": [
+                    "attrs": eattrs,
+                    "children": [
                         f'import * as module from "{STATIC_URL}{fname}"; Object.keys(module).forEach((key) => {{if(key == "cleanup"){{window["{asset_id}_cleanup"] = module[key]}} else {{window[key] = module[key]}}}});'
                     ],
                     "parent": self.current,
@@ -500,7 +526,7 @@ class Transformer:
             )
         elif tag == "Tailwind":
             fname, _ = asset_cache[cast(str, get_atrb(node, "layout"))]
-            self.current["childrens"].append(
+            self.current["children"].append(
                 {
                     "tag": "link",
                     "attrs": [
@@ -514,55 +540,42 @@ class Transformer:
         else:
             element: EscElementSingleTag | EscElementDoubleTag = {
                 "tag": tag,
-                "attrs": attrs,
+                "attrs": eattrs,
                 "parent": self.current,
             }
 
             if mark:
                 self.add_marker_start(loc, mark_attrs)
-            self.current["childrens"].append(element)
+            self.current["children"].append(element)
             if tag == "Group":
                 group = get_atrb(node, "name")
                 if group != "head":
                     group_element = cast(EscGroupElement, element)
-                    group_element["childrens"] = []
+                    group_element["children"] = []
                     self.groups[cast(str, group)] = group_element
-            if isNodeWithChildrens(node):
-                childrens = node["childrens"]
+            if isNodeWithChildren(node):
+                children = node["children"]
                 element = cast(EscElementDoubleTag, element)
                 if tag == "head":
                     self.groups[tag] = cast(EscGroupElement, element)
                 self.current = element
-                element["childrens"] = []
+                element["children"] = []
                 if sfor:
                     if not self.handle_sfor(
-                        node,
-                        childrens,
-                        loc=loc,
-                        loops=loops,
-                        depth=depth,
-                        mode=mode,
-                        **kwargs,
+                        node, children, loc=loc, depth=depth, mode=mode, **kwargs
                     ):
                         rtrn = False
                 elif text:
-                    element["childrens"].append(text)
+                    element["children"].append(text)
                 else:
-                    self.loop(
-                        childrens,
-                        loc=loc,
-                        loops=loops,
-                        depth=depth,
-                        mode=mode,
-                        **kwargs,
-                    )
+                    self.loop(children, loc=loc, depth=depth, mode=mode, **kwargs)
                 if tag == "Helmet":
-                    metas = deepcopy(cast(EscGroupElement, element)["childrens"])
+                    metas = deepcopy(cast(EscGroupElement, element)["children"])
                     for meta in metas:
                         if isinstance(meta, dict):
                             remove_atrb(meta["attrs"], "x-head")
-                    self.groups["head"]["childrens"] += metas
-                    remove_atrb(attrs, "group")
+                    self.groups["head"]["children"] += metas
+                    remove_atrb(eattrs, "group")
                 self.current = element["parent"]
             if mark:
                 self.add_marker_end(loc)
@@ -572,29 +585,28 @@ class Transformer:
 
     def loop(
         self,
-        childrens: list[AstNode],
+        children: list[AstNode] | list[AstElement],
         loc: str,
         depth: int | None = None,
+        loops: list[tuple[str, int]] = [],
         **kwargs: Unpack[LoopKwargs],
     ) -> None:
         prevRtrn: bool | None = None
-        depth = 0 if depth is None else depth + 1
-        for index, children in enumerate(childrens):
-            _loc = copy(loc)
-            if isNodeElement(children):
-                _loc += f"{kwargs['index']}" if not _loc else f",{kwargs['index']}"
-                kwargs["file"] = cast(str, children.get("file", kwargs["file"]))
+        for index, child in enumerate(children):
+            _depth: int = 0 if depth is None else depth + 1
+            _loc: str = loc
+            if isNodeElement(child) and child["tag"] not in ["Layout"]:
+                _loc += f"{index}" if not _loc else f",{index}"
                 if (
                     len(self.targets)
                     and not self.c_target
-                    and not self.is_required(depth, index, _loc)
+                    and not self.is_required(_depth, index, _loc)
                 ):
                     continue
-            kwargs["index"] = index
             rtrn = self._transform(
-                children, _loc, depth=depth, prevRtrn=prevRtrn, **kwargs
+                child, _loc, _depth, prevRtrn=prevRtrn, loops=loops, **kwargs
             )
-            prevRtrn = rtrn if isNodeElement(children) else prevRtrn
+            prevRtrn = rtrn if isNodeElement(child) else prevRtrn
 
     def handle_scontext(
         self, v: AstAttrValue, store: dict[str, Any], reset: list[str]
@@ -631,17 +643,39 @@ class Transformer:
 
         return True
 
+    def sort_props(self, attrs: AstAttrs) -> tuple[AstAttrs, AstAttrs]:
+        withs = [
+            AstAttr(attr[0][1:], attr[1], attr[2])
+            for attr in attrs
+            if attr[0].startswith(".")
+        ]
+        props = [
+            attr for attr in attrs if not (attr[0].startswith(".") or attr[0] == "@")
+        ]
+        return withs, props
+
+    def get_atrb(
+        self,
+        attrs: EscapedAttrs,
+        name: str,
+        default: DoubleQuoteEscapedStr | bool = False,
+    ) -> DoubleQuoteEscapedStr | None | bool:
+        for attr in attrs:
+            if attr[0] == name:
+                return attr[1]
+        return default
+
     def add_marker_start(self, loc: str, attrs: EscapedAttrs) -> None:
         if self.c_target:
             self.partials[self.c_target]["html"] += (
                 f'<Marker id="<{loc}"{self.join_attrs(attrs)} hidden></Marker>'
             )
         else:
-            self.current["childrens"].append(
+            self.current["children"].append(
                 {
                     "tag": "Marker",
                     "attrs": [("id", edq(f"<{loc}")), *attrs, ("hidden", None)],
-                    "childrens": [],
+                    "children": [],
                     "parent": self.current,
                 }
             )
@@ -652,11 +686,11 @@ class Transformer:
                 f'<Marker id=">{loc}" hidden></Marker>'
             )
         else:
-            self.current["childrens"].append(
+            self.current["children"].append(
                 {
                     "tag": "Marker",
                     "attrs": [("id", edq(f">{loc}")), ("hidden", None)],
-                    "childrens": [],
+                    "children": [],
                     "parent": self.current,
                 }
             )
@@ -681,8 +715,9 @@ class Transformer:
     def handle_sfor(
         self,
         node: Ast | ElementDoubleTag,
-        childrens: list[AstNode],
+        children: list[AstNode],
         loc: str,
+        loops: list[tuple[str, int]],
         **kwargs: Unpack[SforKwargs],
     ) -> bool | None:
         sfor = cast(str, get_atrb(node, "s-for"))
@@ -705,15 +740,12 @@ class Transformer:
         for index, item in enumerate(array):
             self.context[sfor] = item
             self.context["index"] = index
+            _loops = deepcopy(loops)
             if skey:
                 _skey = int(eval(skey.code, self.context))
                 _loc = f"{loc}:[{_skey}]"
-                loops: Loops = [
-                    *kwargs["loops"],
-                    (loc, _skey),
-                ]
-                kwargs["loops"] = loops
-            self.loop(childrens, _loc, **kwargs)
+                _loops = [*_loops, (copy(loc), _skey)]
+            self.loop(children, _loc, loops=_loops, **kwargs)
         self.context.pop(sfor, None)
         self.unpack_store(store)
         if len(array):
@@ -723,20 +755,20 @@ class Transformer:
     def pack_with(
         self, attrs: AstAttrs, store: dict[str, Any], reset: list[str]
     ) -> None:
-        for k, v in attrs:
-            if isinstance(v, StrCode):
-                reset.append(k)
-                if k in self.context:
-                    store[k] = self.context[k]
-                self.context[k] = eval(v.code, self.context)
+        for key, val, span in attrs:
+            if isinstance(val, StrCode):
+                reset.append(key)
+                if key in self.context:
+                    store[key] = self.context[key]
+                self.context[key] = eval(val.code, self.context)
 
     def pack_defaults(
         self, attrs: AstAttrs, store: dict[str, Any], reset: list[str]
     ) -> None:
-        for k, v in attrs:
-            if isinstance(v, StrCode) and k not in self.context:
-                reset.append(k)
-                self.context[k] = eval(v.code, self.context)
+        for key, val, span in attrs:
+            if isinstance(val, StrCode) and key not in self.context:
+                reset.append(key)
+                self.context[key] = eval(val.code, self.context)
 
     def reset_context(self, reset: list[str]) -> None:
         for k in reset:
@@ -754,29 +786,30 @@ class Transformer:
         return edq(" ".join(klasses))
 
     def join_attrs(self, attrs: EscapedAttrs) -> str:
-        return "".join(
-            map(
-                lambda attr: f' {attr[0]}="{attr[1]}"' if attr[1] else f" {attr[0]}",
-                attrs,
-            )
-        )
+        attributes: str = ""
+        for k, v in attrs:
+            if v is None:
+                attributes += f" {k}"
+            else:
+                attributes += f' {k}="{v}"'
+        return attributes
 
     def is_required(self, depth: int, index: int, pos: str) -> bool:
         for target in self.targets:
             if target.startswith("$"):
-                for loc in self.ast["map"]["files"].get(target[1:], []):
+                for loc in self.map["files"].get(target[1:], []):
                     if len(loc) > depth and loc[depth] == index:
                         return True
             elif target.startswith("&"):
-                for loc in self.ast["map"]["groups"].get(target[1:], []):
+                for loc in self.map["groups"].get(target[1:], []):
                     if len(loc) > depth and loc[depth] == index:
                         return True
             elif target.startswith("?"):
-                for loc in self.ast["map"]["params"].get(target[1:], []):
+                for loc in self.map["params"].get(target[1:], []):
                     if len(loc) > depth and loc[depth] == index:
                         return True
             elif target.startswith("+"):
-                loc = self.ast["map"]["layouts"].get(target[1:], [-1])
+                loc = self.map["layouts"].get(target[1:], [-1])
                 if len(loc) > depth and loc[depth] == index:
                     return True
             elif target.startswith(pos):
@@ -794,14 +827,14 @@ class Transformer:
                 content.value += node
             else:
                 tag = node["tag"]
-                childrens = node.get("childrens")
+                children = node.get("children")
                 attributes = self.join_attrs(node["attrs"])
-                if isinstance(childrens, list):
-                    if tag and (tag not in EXCLUDES):
+                if isinstance(children, list):
+                    if tag and (tag not in WRAPPERS):
                         content.value += f"<{tag}{attributes}>"
-                    for children in childrens:
-                        compile(children, content)
-                    if tag and (tag not in EXCLUDES):
+                    for child in children:
+                        compile(child, content)
+                    if tag and (tag not in WRAPPERS):
                         content.value += f"</{tag}>"
                 else:
                     content.value += f"<{tag}{attributes} />"

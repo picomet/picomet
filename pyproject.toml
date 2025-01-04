@@ -6,7 +6,7 @@ license = { text = "MIT" }
 description = "The nextjs of django"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["django>=5.0"]
+dependencies = ["django>=5.0", "htmst==1.0a9"]
 classifiers = [
   "Environment :: Web Environment",
   "Framework :: Django",

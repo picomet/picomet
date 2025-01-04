@@ -2,150 +2,51 @@ import base64
 import os
 import re
 import sys
-from collections.abc import Callable
 from copy import deepcopy
-from functools import cache, wraps
+from functools import cache
 from glob import glob
-from html import unescape
-from html.parser import HTMLParser
 from itertools import chain
 from json import JSONEncoder, dumps, loads
 from pathlib import Path
-from typing import Any, Literal, TypeVar, cast, override
+from typing import Any, Literal, cast
 
 from django.apps import apps
 from django.conf import settings
 from django.template import engines, loader
 from django.template.backends.django import Template
 from django.utils.html import escape
+from htmst import HtmlAst
+from htmst.structures import (
+    AttrNode,
+    CommentNode,
+    DoctypeNode,
+    DoubleTagNode,
+    SingleTagNode,
+    TextNode,
+)
 
 from picomet.helpers import find_comet_name, get_comet_id
 from picomet.types import (
     Ast,
+    AstAttr,
     AstAttrs,
     AstElement,
     AstMap,
-    CodeAttrs,
     DoubleQuoteEscapedStr,
     ElementDoubleTag,
+    ElementSingleTag,
     PureAttrs,
     StrCode,
+    Undefined,
+    UndefinedType,
     isNodeElement,
-    isNodeWithChildrens,
+    isNodeWithChildren,
 )
 from picomet.utils import escape_double_quote as edq
-from picomet.utils import get_atrb, mdhash, set_atrb
-
-tagfind_tolerant = re.compile(r"([a-zA-Z][^\t\n\r\f />\x00]*)(?:\s|/(?!>))*")
-attrfind_tolerant = re.compile(
-    r'((?<=[\'"\s/])[^\s/>][^\s/=>]*)(\s*=+\s*'
-    r'(\'[^\']*\'|"[^"]*"|(?![\'"])[^>\s]*))?(?:\s|/(?!>))*'
-)
-endendtag = re.compile(">")
-endtagfind = re.compile(r"</\s*([a-zA-Z][-.a-zA-Z0-9:_]*)\s*>")
-
-
-class BaseHTMLParser(HTMLParser):
-    # Internal -- handle starttag, return end or -1 if not terminated
-    @override
-    def parse_starttag(self, i: int) -> int:
-        self.__starttag_text = None
-        endpos = self.check_for_whole_start_tag(i)
-        if endpos < 0:
-            return endpos
-        rawdata = self.rawdata
-        self.__starttag_text = rawdata[i:endpos]
-
-        # Now parse the data between i+1 and j into a tag and attrs
-        attrs = []
-        match = tagfind_tolerant.match(rawdata, i + 1)
-        assert match, "unexpected call to parse_starttag()"
-        k = match.end()
-        self.lasttag = tag = match.group(1)
-        while k < endpos:
-            m = attrfind_tolerant.match(rawdata, k)
-            if not m:
-                break
-            attrname, rest, attrvalue = m.group(1, 2, 3)
-            if not rest:
-                attrvalue = None
-            elif (
-                attrvalue[:1] == "'" == attrvalue[-1:]
-                or attrvalue[:1] == '"' == attrvalue[-1:]
-            ):
-                attrvalue = attrvalue[1:-1]
-            if attrvalue:
-                attrvalue = unescape(attrvalue)
-            attrs.append((attrname, attrvalue))
-            k = m.end()
-
-        end = rawdata[k:endpos].strip()
-        if end not in (">", "/>"):
-            lineno, offset = self.getpos()
-            if "\n" in self.__starttag_text:
-                lineno = lineno + self.__starttag_text.count("\n")
-                offset = len(self.__starttag_text) - self.__starttag_text.rfind("\n")
-            else:
-                offset = offset + len(self.__starttag_text)
-            self.handle_data(rawdata[i:endpos])
-            return endpos
-        if end.endswith("/>"):
-            # XHTML-style empty tag: <span attr="value" />
-            self.handle_startendtag(tag, attrs)
-        else:
-            self.handle_starttag(tag, attrs)
-            if tag in self.CDATA_CONTENT_ELEMENTS:
-                self.set_cdata_mode(tag)
-        return endpos
-
-    # Internal -- parse endtag, return end or -1 if incomplete
-    @override
-    def parse_endtag(self, i: int) -> int:
-        rawdata = self.rawdata
-        assert rawdata[i : i + 2] == "</", "unexpected call to parse_endtag"
-        match = endendtag.search(rawdata, i + 1)  # >
-        if not match:
-            return -1
-        gtpos = match.end()
-        match = endtagfind.match(rawdata, i)  # </ + tag + >
-        if not match:
-            if self.cdata_elem is not None:
-                self.handle_data(rawdata[i:gtpos])
-                return gtpos
-            # find the name: w3.org/TR/html5/tokenization.html#tag-name-state
-            namematch = tagfind_tolerant.match(rawdata, i + 2)
-            if not namematch:
-                # w3.org/TR/html5/tokenization.html#end-tag-open-state
-                if rawdata[i : i + 3] == "</>":
-                    return i + 3
-                else:
-                    return self.parse_bogus_comment(i)
-            tagname = namematch.group(1)
-            # consume and ignore other stuff between the name and the >
-            # Note: this is not 100% correct, since we might have things like
-            # </tag attr=">">, but looking for > after the name should cover
-            # most of the cases and is much simpler
-            gtpos = rawdata.find(">", namematch.end())
-            self.handle_endtag(tagname)
-            return gtpos + 1
-
-        elem = match.group(1)  # script or style
-        if self.cdata_elem is not None:
-            if elem != self.cdata_elem:
-                self.handle_data(rawdata[i:gtpos])
-                return gtpos
-
-        self.handle_endtag(elem)
-        self.clear_cdata_mode()
-        return gtpos
-
+from picomet.utils import get_atrb, get_span, mdhash
 
 ltrim_re = re.compile(r"^(\s|\n|\t)+")
 rtrim_re = re.compile(r"(\s|\n|\t)+$")
-
-x_re = re.compile(
-    r"(?:(?:({\$)\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*\$})|(({{)\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*}})|({%\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*%}))"
-)
 
 BUILD = len(sys.argv) > 1 and sys.argv[1] == "build"
 COLLECTSTATIC = len(sys.argv) > 1 and sys.argv[1] == "collectstatic"
@@ -157,7 +58,6 @@ DEBUG: bool = settings.DEBUG
 BASE_DIR: Path = settings.BASE_DIR
 STATIC_URL = getattr(settings, "STATIC_URL", "/static/")
 ASSETFILES_DIRS = getattr(settings, "ASSETFILES_DIRS", [])
-
 django_engine = engines["django"]
 
 picomet_dir = BASE_DIR / ".picomet"
@@ -166,6 +66,8 @@ build_dir = picomet_dir / "build"
 assets_dir = (build_dir if (TEST | BUILD | COLLECTSTATIC) else cache_dir) / "assets"
 
 ast_cache: dict[str, Ast] = {}
+
+map_cache: dict[str, AstMap] = {}
 
 asset_cache: dict[str, tuple[str, str]] = {}
 if not (BUILD | RECOMPILE):
@@ -212,30 +114,28 @@ def save_commet(path: str, ast: Ast, folder: Path) -> None:
             del node["parent"]  # type: ignore
         except KeyError:
             pass
-        if isNodeWithChildrens(node):
-            for index, children in enumerate(node["childrens"]):
-                if isNodeElement(children):
+        if isNodeWithChildren(node):
+            for index, child in enumerate(node["children"]):
+                if isNodeElement(child):
                     if BUILD:
-                        if children["tag"] == "Tailwind":
-                            fname = asset_cache[
-                                cast(str, get_atrb(children, "layout"))
-                            ][0]
-                            node["childrens"][index] = {
+                        if child["tag"] == "Tailwind":
+                            fname = asset_cache[cast(str, get_atrb(child, "layout"))][0]
+                            node["children"][index] = {
                                 "tag": "link",
                                 "attrs": [
-                                    ("rel", "stylesheet"),
-                                    ("href", f"{STATIC_URL}{fname}"),
+                                    ("rel", "stylesheet", None),
+                                    ("href", f"{STATIC_URL}{fname}", None),
                                 ],
                             }
-                    process(children)
-                elif isinstance(children, str):
+                    process(child)
+                elif isinstance(child, str):
                     if not settings.DEBUG and node["tag"] != "pre":
-                        clean = children
+                        clean = child
                         if index == 0:
                             clean = re.sub(ltrim_re, "", clean)
-                        if index == (len(node["childrens"]) - 1):
+                        if index == (len(node["children"]) - 1):
                             clean = re.sub(rtrim_re, "", clean)
-                        node["childrens"][index] = clean
+                        node["children"][index] = clean
 
     process(_ast)
 
@@ -272,124 +172,135 @@ def load_comet(path: str, folder: Path) -> None:
             ast = loads(f.read(), object_hook=ast_decoder)
 
             def process(node: AstElement) -> None:
-                if isNodeWithChildrens(node):
-                    for children in node["childrens"]:
-                        if isNodeElement(children):
-                            children["parent"] = node  # type: ignore
-                            process(children)
+                if isNodeWithChildren(node):
+                    for child in node["children"]:
+                        if isNodeElement(child):
+                            child["parent"] = node  # type: ignore
+                            process(child)
 
             process(ast)
 
             ast_cache[path] = ast
 
 
-R = TypeVar("R")
+def load_map(path: str, folder: Path) -> None:
+    source = folder / f"{get_comet_id(path)}.json"
+    if source.exists():
+        with source.open() as f:
+            map = loads(f.read())
+            map_cache[path] = map
 
 
-def handle_addition(func: Callable[..., R]) -> Callable[..., R]:
-    @wraps(func)
-    def wrapper(self: "CometParser", *args: list[Any]) -> None:
-        if self.in_debug and not settings.DEBUG:
-            return
-        if self.in_pro and settings.DEBUG:
-            return
-        if self.using_layout and not self.in_layout:
-            return
-        func(self, *args)
-
-    return cast(Callable[..., R], wrapper)
+x_re = re.compile(
+    r"(?:(?:({\$)\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*\$})|(({{)\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*}})|({%\s*((?:\"(?:\\\"|[^\"])*\"|'(?:\\'|[^'])*'|[^\"'\n])*?)\s*%}))"
+)
 
 
-class CometParser(BaseHTMLParser):
-    def __init__(self, path: str, use_cache: bool = True, **kwargs: dict[str, bool]):
-        super().__init__()
+class CometParser:
+    def __init__(self, source: str, path: str, use_cache: bool = True):
         self.ast: Ast = {
             "tag": "Fragment",
             "attrs": [],
-            "childrens": [],
+            "children": [],
             "parent": None,
-            "map": {"groups": {}, "params": {}, "layouts": {}, "files": {}},
             "file": path,
             "isBase": False,
         }
+        self.map: AstMap = {"groups": {}, "params": {}, "layouts": {}, "files": {}}
         self.imports: dict[str, str] = {}
-        self.loc: list[int] = []
         self.current: Ast | ElementDoubleTag = self.ast
-        self.is_base: bool = False
-        self.using_layout: bool = False
-        self.in_layout: bool = False
-        self.in_debug: bool = False
-        self.in_pro: bool = False
-
         self.path = path
-        self.use_cache: bool = use_cache
-        self.parsed: bool = False
+
+        ast_cached = ast_cache.get(path)
+        map_cached = map_cache.get(path)
+        if use_cache and (not ast_cached or not map_cache) and not (BUILD or RECOMPILE):
+            load_comet(path, (cache_dir if RUNSERVER else build_dir) / "comets")
+            load_map(path, (cache_dir if RUNSERVER else build_dir) / "maps")
+        ast_cached = ast_cache.get(path)
+        map_cached = map_cache.get(path)
+
+        if (not ast_cached or not map_cached) or not use_cache:
+            for d1 in dgraph:
+                for i, d2 in enumerate(dgraph[d1]):
+                    if d2 == path:
+                        del dgraph[d1][i]
+            self.handle_children(HtmlAst(source).root.children)
+            ast_cache[path] = self.ast
+            Mapper(self.ast, path)
+            if BUILD:
+                if not twlayouts.get(path):
+                    save_commet(path, self.ast, build_dir / "comets")
+            else:
+                save_dgraph()
+                save_commet(path, self.ast, cache_dir / "comets")
+        else:
+            self.ast = ast_cached
+            self.map = map_cached
 
     @property
     @cache
     def name(self) -> str | None:
         return find_comet_name(self.path)
 
-    def feed(self, feed: str) -> None:
-        if self.parsed:
+    def handle_children(
+        self,
+        children: list[
+            DoubleTagNode | SingleTagNode | TextNode | CommentNode | DoctypeNode
+        ],
+    ) -> None:
+        for child in children:
+            match child:
+                case DoubleTagNode():
+                    self.handle_doubletag(child)
+                case SingleTagNode():
+                    self.handle_singletag(child)
+                case TextNode():
+                    self.handle_text(child)
+                case CommentNode():
+                    self.handle_comment(child)
+                case DoctypeNode():
+                    self.handle_doctype(child)
+
+    def handle_doubletag(self, node: DoubleTagNode) -> None:
+        tag = node.tag
+        attrs = node.attrs
+        attributes: AstAttrs
+        if (tag == "Debug") and not DEBUG:
             return
-        self.parsed = True
-        cached = ast_cache.get(self.path)
-        if self.use_cache and not cached and not (BUILD or RECOMPILE):
-            load_comet(self.path, (cache_dir if RUNSERVER else build_dir) / "comets")
-        cached = ast_cache.get(self.path)
-
-        if not cached or not self.use_cache:
-            for d1 in dgraph:
-                for i, d2 in enumerate(dgraph[d1]):
-                    if d2 == self.path:
-                        del dgraph[d1][i]
-            self.ast["map"]["files"].setdefault(self.path, [[]])
-            super().feed(feed)
-            ast_cache[self.path] = self.ast
-            if not BUILD:
-                save_commet(self.path, self.ast, cache_dir / "comets")
-                save_dgraph()
-        else:
-            self.ast = cached
-
-    @override
-    @handle_addition
-    def handle_starttag(self, tag: str, attrs: PureAttrs) -> None:
-        element: ElementDoubleTag
-        if tag == "Debug":
-            self.in_debug = True
-        elif tag == "Pro":
-            self.in_pro = True
+        elif (tag == "Pro") and DEBUG:
+            return
         elif (
             tag == "Layout"
             and self.current is self.ast
-            and not len(self.ast["childrens"])
+            and not len(self.ast["children"])
         ):
-            self.using_layout = True
-            self.in_layout = True
-            component = str(get_atrb(attrs, "@"))
+            component = str(self.get_atrb(attrs, "@"))
             if len(os.path.basename(component).split(".")) == 1:
                 component = f"{component}.html"
             template = loader.get_template(component, using="picomet").template
             path = template.origin.name
+            parse(template.source, path)
             self.add_dep(path, self.path)
-            ast = deepcopy(self.ast)
-            self.ast = deepcopy(parse(template.source, path).ast)
-            loc = self.find_loc(
-                "Outlet", self.ast, [("layout", edq(mdhash(component, 8)))]
-            )
-            if loc:
-                el: Ast | ElementDoubleTag = self.ast
-                for _l in loc:
-                    el = cast(Ast | ElementDoubleTag, el["childrens"][_l])
-                el["childrens"].append(ast)
-                self.loc = loc + [0]
-                for file in ast["map"]["files"]:
-                    for _loc in ast["map"]["files"][file]:
-                        self.ast["map"]["files"].setdefault(file, [])
-                        self.ast["map"]["files"][file].append(self.loc + _loc)
-                self.current = ast
+            elLayout: ElementDoubleTag = {
+                "tag": "Layout",
+                "attrs": self.convert_attrs(attrs),
+                "children": [],
+                "parent": self.current,
+                "span": get_span(node),
+            }
+            elPage: ElementDoubleTag = {
+                "tag": "Fragment",
+                "attrs": [],
+                "children": [],
+                "parent": elLayout,
+                "file": self.ast.pop("file"),
+            }
+            elLayout["children"].append(elPage)
+
+            self.current["children"].append(elLayout)
+            self.current = elPage
+            self.handle_children(node.children)
+            self.current = elLayout["parent"]
         elif (
             self.imports.get(tag)
             or engines["picomet"].engine.components.get(tag)
@@ -398,89 +309,83 @@ class CometParser(BaseHTMLParser):
             component = str(
                 self.imports.get(tag)
                 or engines["picomet"].engine.components.get(tag)
-                or get_atrb(attrs, "@")
+                or self.get_atrb(attrs, "@")
             )
             if len(os.path.basename(component).split(".")) == 1:
                 component = f"{component}.html"
             template = loader.get_template(component, using="picomet").template
             path = template.origin.name
-            ast = deepcopy(parse(template.source, path).ast)
-            self.add_props(
-                ast,
-                self.process_attrs(
-                    [(k, v) for k, v in attrs if k != "@" and not k.startswith(".")]
-                ),
-            )
+            parse(template.source, path)
             self.add_dep(path, self.path)
-            element = {
-                "tag": "With",
-                "attrs": cast(
-                    AstAttrs,
-                    self.withs([(k[1:], v) for k, v in attrs if k.startswith(".")]),
-                ),
-                "childrens": [ast],
+            attributes = self.process_attrs(attrs)
+            if self.get_atrb(attrs, "@") is Undefined:
+                attributes = [AstAttr("@", edq(component), None)] + attributes
+            elInclude: ElementDoubleTag = {
+                "tag": "Include",
+                "attrs": self.process_props(attributes),
+                "children": [],
                 "parent": self.current,
+                "span": get_span(node),
             }
-            self.current["childrens"].append(element)
-            ast["parent"] = element
-            self.load_component_map(ast["map"])
-
-            childrenLoc = self.find_loc("Children", ast, [])
-            childrenElement = self.find_node("Children", element, [])
-            if childrenLoc and childrenElement:
-                self.loc = self.loc + [len(self.current["childrens"]), 0] + childrenLoc
-                self.current = cast(ElementDoubleTag, childrenElement)
+            self.current["children"].append(elInclude)
+            self.current = elInclude
+            self.handle_children(node.children)
+            self.current = self.current["parent"]
         else:
-            attributes: AstAttrs
             if tag == "With":
-                attributes = cast(AstAttrs, self.withs(attrs))
+                attributes = self.withs(attrs)
             elif tag == "Default":
-                attributes = cast(AstAttrs, self.defaults(attrs))
+                attributes = self.defaults(attrs)
             else:
                 attributes = self.process_attrs(attrs)
-            self.loc.append(len(self.current["childrens"]))
-            element = {
+            element: ElementDoubleTag = {
                 "tag": tag,
                 "attrs": attributes,
-                "childrens": [],
+                "children": [],
                 "parent": self.current,
+                "span": get_span(node),
             }
-            self.current["childrens"].append(element)
+            self.current["children"].append(element)
             self.current = element
-            self.add_map(attributes, self.loc.copy())
+            self.handle_children(node.children)
+            self.current = self.current["parent"]
 
-    @override
-    @handle_addition
-    def handle_startendtag(self, tag: str, attrs: PureAttrs) -> None:
-        if tag.startswith("Import."):
-            component = get_atrb(attrs, "@")
-            if component:
-                self.imports[tag[7:]] = str(component)
-        elif tag == "Outlet":
+    def handle_singletag(self, node: SingleTagNode) -> None:
+        tag = node.tag
+        attrs = node.attrs
+        elInclude: ElementSingleTag
+        if tag == "Outlet":
+            attributes: AstAttrs = []
             if self.name:
                 layout = edq(mdhash(self.name, 8))
-                attrs = [("layout", layout)]
-                self.ast["map"]["layouts"].setdefault(layout, [])
-                self.ast["map"]["layouts"][layout] = self.loc.copy() + [
-                    len(self.current["childrens"])
-                ]
-            self.current["childrens"].append(
-                {
-                    "tag": tag,
-                    "attrs": cast(AstAttrs, attrs),
-                    "childrens": [],
-                    "parent": self.current,
-                }
-            )
+                attributes.append(AstAttr("layout", layout, None))
+            elOutlet: ElementDoubleTag = {
+                "tag": "Outlet",
+                "attrs": attributes,
+                "children": [],
+                "parent": self.current,
+            }
+            elInclude = {
+                "tag": "Children",
+                "attrs": [],
+                "parent": elOutlet,
+                "span": get_span(node),
+            }
+            elOutlet["children"].append(elInclude)
+            self.current["children"].append(elOutlet)
         elif tag == "Children":
-            self.current["childrens"].append(
+            self.current["children"].append(
                 {
                     "tag": tag,
-                    "attrs": cast(AstAttrs, attrs),
-                    "childrens": [],
+                    "attrs": self.convert_attrs(attrs),
                     "parent": self.current,
+                    "span": get_span(node),
                 }
             )
+        elif tag.startswith("Import."):
+            component = self.get_atrb(attrs, "@")
+            if component:
+                self.imports[tag[7:]] = str(component)
         elif (
             self.imports.get(tag)
             or engines["picomet"].engine.components.get(tag)
@@ -489,250 +394,301 @@ class CometParser(BaseHTMLParser):
             component = (
                 self.imports.get(tag)
                 or engines["picomet"].engine.components.get(tag)
-                or get_atrb(attrs, "@")
+                or self.get_atrb(attrs, "@")
             )
             if isinstance(component, str):
                 if len(os.path.basename(component).split(".")) == 1:
                     component = f"{component}.html"
                 template = loader.get_template(component, using="picomet").template
                 path = template.origin.name
-                ast = deepcopy(parse(template.source, path).ast)
+                parse(template.source, path)
                 self.add_dep(path, self.path)
-                self.add_props(
-                    ast,
-                    self.process_attrs(
-                        [(k, v) for k, v in attrs if k != "@" and not k.startswith(".")]
-                    ),
-                )
-                element: ElementDoubleTag = {
-                    "tag": "With",
-                    "attrs": cast(
-                        AstAttrs,
-                        self.withs([(k[1:], v) for k, v in attrs if k.startswith(".")]),
-                    ),
-                    "childrens": [ast],
+                attributes = self.process_attrs(attrs)
+                if self.get_atrb(attrs, "@") is Undefined:
+                    attributes = [AstAttr("@", edq(component), None)] + attributes
+                elInclude = {
+                    "tag": "Include",
+                    "attrs": self.process_props(attributes),
                     "parent": self.current,
+                    "span": get_span(node),
                 }
-                self.current["childrens"].append(element)
-                ast["parent"] = element
-                self.load_component_map(ast["map"])
+                self.current["children"].append(elInclude)
         elif tag == "Group":
-            self.current["childrens"].append(
+            self.current["children"].append(
                 {
                     "tag": tag,
-                    "attrs": cast(AstAttrs, attrs),
-                    "childrens": [],
+                    "attrs": self.convert_attrs(attrs),
+                    "children": [],
                     "parent": self.current,
+                    "span": get_span(node),
                 }
             )
         elif tag == "Js" or tag == "Ts" or tag == "Css" or tag == "Sass":
-            asset_name = get_atrb(attrs, "@")
+            asset_name = self.get_atrb(attrs, "@")
             if isinstance(asset_name, str):
                 asset = find_in_comets(asset_name) or find_in_assets(asset_name)
                 if asset:
                     self.add_dep(asset, self.path)
                     if not asset_cache.get(asset):
                         compile_asset(asset)
-                    set_atrb(attrs, "@", cast(DoubleQuoteEscapedStr, asset))
-                    self.current["childrens"].append(
+                    attributes = self.convert_attrs(attrs)
+                    self.set_atrb(attributes, "@", DoubleQuoteEscapedStr(asset))
+                    self.current["children"].append(
                         {
                             "tag": tag,
-                            "attrs": cast(AstAttrs, attrs),
+                            "attrs": attributes,
                             "parent": self.current,
                         }
                     )
         elif tag == "Tailwind":
             if self.current["tag"] == "head":
-                twlayouts[self.path] = str(get_atrb(attrs, "@"))
+                twlayouts[self.path] = str(self.get_atrb(attrs, "@"))
                 if not BUILD:
                     with open(cache_dir / "twlayouts.json", "w") as f:
                         f.write(dumps(twlayouts))
-                attrs.append(("layout", edq(self.path)))
-                self.current["childrens"].append(
+                attributes = self.convert_attrs(attrs)
+                attributes = [AstAttr("layout", edq(self.path), None)] + attributes
+                self.current["children"].append(
                     {
                         "tag": tag,
-                        "attrs": cast(AstAttrs, attrs),
+                        "attrs": attributes,
                         "parent": self.current,
                     }
                 )
         else:
             attributes = self.process_attrs(attrs)
-            self.current["childrens"].append(
+            self.current["children"].append(
                 {"tag": tag, "attrs": attributes, "parent": self.current}
             )
-            self.add_map(attributes, self.loc.copy() + [len(self.current["childrens"])])
 
-    def handle_endtag(self, tag: str) -> None:
-        if self.in_debug:
-            if tag == "Debug":
-                self.in_debug = False
-                return
-            elif not settings.DEBUG:
-                return
-        if self.in_pro:
-            if tag == "Pro":
-                self.in_pro = False
-                return
-            elif settings.DEBUG:
-                return
-
-        if tag == "Layout":
-            self.in_layout = False
-        elif (
-            self.imports.get(tag)
-            or engines["picomet"].engine.components.get(tag)
-            or (tag == "Include")
-        ):
-            while True:
-                if self.current["tag"] == "With":
-                    break
-                else:
-                    if len(self.loc):
-                        self.loc.pop(-1)
-                    if self.current["parent"]:
-                        self.current = self.current["parent"]
-        if len(self.loc):
-            self.loc.pop(-1)
-        if self.current["parent"]:
-            self.current = self.current["parent"]
-
-    @handle_addition
-    def handle_data(self, data: str) -> None:
-        matches = list(re.finditer(x_re, data))
+    def handle_text(self, node: TextNode) -> None:
+        text = node.text
+        matches = list(re.finditer(x_re, text))
         if len(matches):
             previous = None
             for match in matches:
-                self.current["childrens"].append(
-                    data[previous if previous else 0 : match.start()]
+                self.current["children"].append(
+                    text[previous if previous else 0 : match.start()]
                 )
                 groups = [group for group in (match.groups()) if group is not None]
                 if groups[0] == "{$":
-                    self.current["childrens"].append(StrCode(groups[1], self.path))
+                    self.current["children"].append(StrCode(groups[1], self.path))
                 elif groups[0].startswith("{{") or groups[0].startswith("{%"):
-                    self.current["childrens"].append(
+                    self.current["children"].append(
                         django_engine.from_string(groups[0])
                     )
                 previous = match.end()
             if previous:
-                self.current["childrens"].append(data[previous:])
+                self.current["children"].append(text[previous:])
         else:
-            self.current["childrens"].append(data)
+            self.current["children"].append(text)
 
-    def handle_decl(self, decl: str) -> None:
+    def handle_doctype(self, node: DoctypeNode) -> None:
         self.ast["isBase"] = True
-        self.is_base = True
-        self.current["childrens"].append(f"<!{decl}>")
+        self.current["children"].append(f"<!doctype {node.text}>")
 
-    def handle_charref(self, name: str) -> None:
-        print("Encountered a charref  :", name)
+    def handle_comment(self, node: CommentNode) -> None:
+        self.current["children"].append(f"<!-- {node.text} -->")
 
-    def handle_entityref(self, name: str) -> None:
-        print("Encountered an entityref  :", name)
+    def get_atrb(
+        self, attrs: list[AttrNode], name: str, default: str | UndefinedType = Undefined
+    ) -> str | None | UndefinedType:
+        for attr in attrs:
+            if attr.name == name:
+                return attr.value
+        return default
 
-    def handle_pi(self, data: str) -> None:
-        print("Encountered a pi  :", data)
-
-    def process_attrs(self, attrs: PureAttrs) -> AstAttrs:
+    def convert_attrs(self, attrs: list[AttrNode]) -> AstAttrs:
         attributes: AstAttrs = []
-        for k, v in attrs:
+        for attr in attrs:
+            attributes.append(
+                AstAttr(attr.name, self.convert_value(attr.value), get_span(attr))
+            )
+        return attributes
+
+    def convert_value(self, value: str | None) -> DoubleQuoteEscapedStr | None:
+        if value is None:
+            return None
+        return edq(value)
+
+    def set_atrb(
+        self,
+        attrs: AstAttrs,
+        name: str,
+        value: DoubleQuoteEscapedStr | StrCode | None,
+    ) -> None:
+        for index, attr in enumerate(attrs):
+            if attr[0] == name:
+                attrs[index] = AstAttr(name, value, None)
+                return
+        attrs.append(AstAttr(name, value, None))
+
+    def process_attrs(self, attrs: list[AttrNode]) -> AstAttrs:
+        attributes: AstAttrs = []
+        for attr in attrs:
+            k = attr.name
+            v = attr.value
             if (
-                k == "s-show"
-                or k == "s-if"
-                or k == "s-elif"
-                or k == "s-in"
-                or k == "s-of"
-                or k == "s-key"
-                or k == "s-text"
+                k in ["s-show", "s-if", "s-elif", "s-in", "s-of", "s-key", "s-text"]
                 or k.startswith("s-prop:")
                 or k.startswith("s-bind:")
                 or k.startswith("s-toggle:")
             ) and v is not None:
-                attributes.append((k, self.compile(v)))
+                attributes += [AstAttr(k, self.compile(v), get_span(attr))]
             elif k.startswith("s-asset:") and v is not None:
                 asset = find_in_assets(v)
                 if asset:
                     if not BUILD:
                         self.add_dep(asset, self.path)
                         attributes += [
-                            (k, edq(asset)),
-                            ("data-asset-id", edq(compile_resouce(asset))),
-                            ("data-target", edq(k.split(":")[1])),
+                            AstAttr(k, edq(asset), get_span(attr)),
+                            AstAttr(
+                                "data-asset-id",
+                                edq(compile_resouce(asset)),
+                                get_span(attr),
+                            ),
+                            AstAttr(
+                                "data-target", edq(k.split(":")[1]), get_span(attr)
+                            ),
                         ]
                     else:
                         compile_resouce(asset)
                         attributes += [
-                            (
+                            AstAttr(
                                 k.split(":")[1],
                                 edq(f"{STATIC_URL}{asset_cache[asset][0]}"),
+                                get_span(attr),
                             )
                         ]
             elif k.startswith("s-static:"):
-                attributes.append((k.split(":")[1], escape(settings.STATIC_URL + v)))
+                attributes.append(
+                    AstAttr(
+                        k.split(":")[1], escape(settings.STATIC_URL + v), get_span(attr)
+                    )
+                )
             elif k == "server" or k == "client":
-                attributes.append(("mode", DoubleQuoteEscapedStr(k)))
+                attributes.append(
+                    AstAttr("mode", DoubleQuoteEscapedStr(k), get_span(attr))
+                )
             else:
-                attributes.append((k, v))
+                attributes.append(AstAttr(k, self.convert_value(v), get_span(attr)))
 
         if self.current["tag"] == "Helmet":
-            attributes.append(("x-head", None))
+            attributes.append(AstAttr("x-head", None, None))
 
         return attributes
+
+    def process_props(self, attrs: AstAttrs) -> AstAttrs:
+        _props: AstAttrs = []
+        for attr in attrs:
+            k, v, span = attr
+            if isinstance(v, str) and k.startswith("."):
+                _props.append(
+                    AstAttr(
+                        k, self.compile("True") if v is None else self.compile(v), span
+                    )
+                )
+            else:
+                _props.append(attr)
+        return _props
 
     def compile(self, v: str | DoubleQuoteEscapedStr) -> StrCode:
         return StrCode(v, self.path)
 
-    def withs(self, attrs: PureAttrs) -> CodeAttrs:
-        _withs: CodeAttrs = []
-        for k, v in attrs:
+    def withs(self, attrs: list[AttrNode]) -> AstAttrs:
+        _withs: AstAttrs = []
+        for attr in attrs:
+            k = attr.name
+            v = attr.value
             _withs.append(
-                (
+                AstAttr(
                     k,
                     self.compile("True") if v is None else self.compile(v),
+                    get_span(attr),
                 )
             )
         return _withs
 
-    def defaults(self, attrs: PureAttrs) -> CodeAttrs:
-        _defaults: CodeAttrs = []
-        for k, v in attrs:
+    def defaults(self, attrs: list[AttrNode]) -> AstAttrs:
+        _defaults: AstAttrs = []
+        for attr in attrs:
+            k = attr.name
+            v = attr.value
             if isinstance(v, str):
-                _defaults.append((k, self.compile(v)))
+                _defaults.append(AstAttr(k, self.compile(v), get_span(attr)))
         return _defaults
-
-    def add_props(self, element: AstElement, props: AstAttrs) -> None:
-        for index, attr in enumerate(element["attrs"]):
-            if attr[0] == "s-props":
-                element["attrs"] = list(
-                    list(element["attrs"])[:index]
-                    + list(props)
-                    + list(element["attrs"])[index + 1 :]
-                )
-        if not isNodeWithChildrens(element):
-            return
-        element = cast(ElementDoubleTag, element)
-        for children in element["childrens"]:
-            if isNodeElement(children):
-                self.add_props(children, props)
 
     def add_dep(self, component: str, dependent: str) -> None:
         dgraph.setdefault(component, [])
         if dependent not in dgraph[component]:
             dgraph[component].append(dependent)
 
-    def add_map(self, attrs: AstAttrs, loc: list[int]) -> None:
-        sgroup = get_atrb(attrs, "s-group")
-        if isinstance(sgroup, str):
-            for group in sgroup.split(","):
-                self.ast["map"]["groups"].setdefault(group, [])
-                self.ast["map"]["groups"][group].append(loc)
-        sparam = get_atrb(attrs, "s-param")
-        if isinstance(sparam, str):
-            for param in sparam.split(","):
-                self.ast["map"]["params"].setdefault(param, [])
-                self.ast["map"]["params"][param].append(loc)
+
+def parse(source: str, path: str, use_cache: bool = True) -> CometParser:
+    return CometParser(source, path, use_cache)
+
+
+class Mapper:
+    def __init__(self, ast: Ast, path: str) -> None:
+        self.ast: Ast = ast
+        self.path: str = path
+        self.map: AstMap = {"groups": {}, "params": {}, "layouts": {}, "files": {}}
+        self.map_node(ast)
+
+        map_cache[path] = self.map
+
+        maps_dir = (build_dir if BUILD else cache_dir) / "maps"
+        dest = maps_dir / f"{get_comet_id(path)}.json"
+        with dest.open("w") as f:
+            f.write(dumps(self.map))
+
+    def map_node(self, node: AstElement, loc: list[int] = []) -> None:
+        tag = node["tag"]
+        comet: str
+        file = node.get("file")
+        if isinstance(file, str):
+            self.map["files"].setdefault(file, [])
+            self.map["files"][file].append(loc.copy())
+
+        self.map_group_n_param(node["attrs"], loc)
+        if isNodeWithChildren(node):
+            if tag in ["Layout", "Include"]:
+                at = get_atrb(node, "@")
+                if isinstance(at, str):
+                    comet = at
+                    if not comet.endswith(".html"):
+                        comet = f"{comet}.html"
+                    template = loader.get_template(comet, using="picomet").template
+                    parser = parse(template.source, template.origin.name)
+                    self.load_map(parser.map, loc)
+                    children = self.find_loc("Children", parser.ast, [])
+                    if children:
+                        for index, child in enumerate(node["children"]):
+                            if isNodeElement(child):
+                                self.map_node(child, loc + children + [index])
+                return
+            elif tag == "Outlet":
+                layout = get_atrb(node, "layout")
+                if isinstance(layout, str):
+                    self.map["layouts"].setdefault(layout, [])
+                    self.map["layouts"][layout] = loc.copy()
+                return
+
+            for index, child in enumerate(node["children"]):
+                if isNodeElement(child):
+                    self.map_node(child, loc + [index])
+        elif tag == "Include":
+            at = get_atrb(node, "@")
+            if isinstance(at, str):
+                comet = at
+                if not comet.endswith(".html"):
+                    comet = f"{comet}.html"
+                template = loader.get_template(comet, using="picomet").template
+                parser = parse(template.source, template.origin.name)
+                self.load_map(parser.map, loc)
 
     def find_loc(
-        self, tag: str, ast: AstElement, attrs: AstAttrs, loc: list[int] | None = None
+        self, tag: str, ast: AstElement, attrs: PureAttrs, loc: list[int] | None = None
     ) -> list[int] | None:
         loc = loc or []
         if ast["tag"] == tag:
@@ -741,21 +697,21 @@ class CometParser(BaseHTMLParser):
                     break
             else:
                 return loc
-        if "childrens" not in ast:
+        if "children" not in ast:
             return None
         ast = cast(ElementDoubleTag, ast)
-        for index, children in enumerate(ast["childrens"]):
-            if isinstance(children, dict):
-                children = cast(AstElement, children)
+        for index, child in enumerate(ast["children"]):
+            if isinstance(child, dict):
+                child = cast(AstElement, child)
                 loc.append(index)
-                _loc = self.find_loc(tag, children, attrs, loc=loc)
+                _loc = self.find_loc(tag, child, attrs, loc=loc)
                 if _loc:
                     return _loc
                 loc.pop(-1)
         return None
 
     def find_node(
-        self, tag: str, ast: AstElement, attrs: AstAttrs
+        self, tag: str, ast: AstElement, attrs: PureAttrs
     ) -> AstElement | None:
         if ast["tag"] == tag:
             for attr in attrs:
@@ -763,32 +719,39 @@ class CometParser(BaseHTMLParser):
                     break
             else:
                 return ast
-        if not isNodeWithChildrens(ast):
+        if not isNodeWithChildren(ast):
             return None
-        for children in ast["childrens"]:
-            if isNodeElement(children):
-                node = self.find_node(tag, children, attrs)
+        for child in ast["children"]:
+            if isNodeElement(child):
+                node = self.find_node(tag, child, attrs)
                 if node:
                     return node
         return None
 
-    def load_component_map(self, map: AstMap) -> None:
+    def map_group_n_param(self, attrs: AstAttrs, loc: list[int]) -> None:
+        sgroup = get_atrb(attrs, "s-group")
+        if isinstance(sgroup, str):
+            for group in sgroup.split(","):
+                self.map["groups"].setdefault(group, [])
+                self.map["groups"][group].append(loc.copy())
+        sparam = get_atrb(attrs, "s-param")
+        if isinstance(sparam, str):
+            for param in sparam.split(","):
+                self.map["params"].setdefault(param, [])
+                self.map["params"][param].append(loc.copy())
+
+    def load_map(self, map: AstMap, loc: list[int]) -> None:
         for target in map:
-            target = cast(Literal["files", "groups", "params"], target)
-            for id in map[target]:
-                self.ast["map"][target].setdefault(id, [])
-                self.ast["map"][target][id] += list(
-                    [
-                        (self.loc + [len(self.current["childrens"]) - 1, 0] + _loc)
-                        for _loc in map[target][id]
-                    ]
-                )
-
-
-def parse(source: str, path: str, use_cache: bool = True) -> CometParser:
-    parser = CometParser(path, use_cache)
-    parser.feed(source)
-    return parser
+            if target in ["files", "groups", "params"]:
+                target = cast(Literal["files", "groups", "params"], target)
+                for id in map[target]:
+                    self.map[target].setdefault(id, [])
+                    self.map[target][id] += list(
+                        [(loc + _loc) for _loc in map[target][id]]
+                    )
+        layouts = map["layouts"]
+        for id in layouts:
+            self.map["layouts"][id] = loc + layouts[id]
 
 
 sass_load_paths = [
@@ -921,7 +884,7 @@ def compile_tailwind(layout: str) -> None:
     save_asset_cache()
 
 
-def find_in_comets(name: str) -> str | None:
+def find_in_comets(name: str | DoubleQuoteEscapedStr) -> str | None:
     comet_dirs = list(
         chain.from_iterable(
             [
@@ -933,7 +896,7 @@ def find_in_comets(name: str) -> str | None:
     return find_in_dirs(name, comet_dirs)
 
 
-def find_in_assets(name: str) -> str | None:
+def find_in_assets(name: str | DoubleQuoteEscapedStr) -> str | None:
     asset_dirs = [
         *[str(d) for d in ASSETFILES_DIRS],
         *[os.path.join(app.path, "assets") for app in apps.get_app_configs()],

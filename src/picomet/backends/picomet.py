@@ -36,7 +36,7 @@ class Template:
         self, context: dict[str, Any], targets: list[str], keys: Loops
     ) -> dict | str:
         parser = parse(self.source, self.origin.name)
-        transformer = Transformer(parser.ast, context, targets, keys)
+        transformer = Transformer(parser.ast, parser.map, context, targets, keys)
         transformer.transform()
         return transformer.partials if len(targets) else transformer.compile_content()
 

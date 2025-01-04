@@ -25,7 +25,9 @@ from picomet.loaders import cache_file, fcache, fhash
 from picomet.parser import (
     ASSETFILES_DIRS,
     STATIC_URL,
+    Mapper,
     asset_cache,
+    ast_cache,
     compile_asset,
     compile_resouce,
     compile_tailwind,
@@ -147,7 +149,7 @@ def parse_patterns(url_patterns: list[URLResolver | URLPattern]) -> None:
             html_file = renderer.origin.name
             with open(html_file) as f:
                 cache_file(html_file, f.read())
-            parse(fcache[html_file], html_file, renderer.origin.template_name)
+            parse(fcache[html_file], html_file)
         elif isinstance(url_pattern, URLResolver):
             parse_patterns(
                 getattr(
@@ -178,17 +180,20 @@ def compile_file(path: str) -> None:
         and (cache_dir / "comets" / f"{get_comet_id(path)}.json").exists()
     ):
         parser = parse(fcache[path], path, use_cache=False)
+
         dmap = deepcopy(dgraph)
 
         def update_depended(p: str) -> None:
             for d in dmap.get(p, []):
-                if not fcache.get(d):
+                if not ast_cache.get(d):
                     if os.path.exists(d):
                         with open(d) as f:
-                            cache_file(d, f.read())
+                            parse(f.read(), d, use_cache=False)
                     else:
                         continue
-                parse(fcache[d], d, use_cache=False)
+                ast = ast_cache.get(d)
+                if ast:
+                    Mapper(ast, d)
                 update_depended(d)
 
         update_depended(path)
@@ -230,7 +235,7 @@ def compile_file(path: str) -> None:
             find_depended_layout(path)
             find_depending_layout(path)
 
-        hmr_send_message({"base" if parser.is_base else "template": path})
+        hmr_send_message({"base" if parser.ast["isBase"] else "template": path})
     elif (ext == ".js" or ext == ".ts") and len(dgraph.get(path, [])):
         compile_asset(path)
         hmr_send_message(
@@ -272,8 +277,9 @@ def compile_file(path: str) -> None:
 
 def validate_cache() -> bool:
     comets_dir = cache_dir / "comets"
+    maps_dir = cache_dir / "maps"
     assets_dir = cache_dir / "assets"
-    for folder in [picomet_dir, cache_dir, comets_dir, assets_dir]:
+    for folder in [picomet_dir, cache_dir, comets_dir, maps_dir, assets_dir]:
         if not folder.is_dir():
             return False
 
@@ -307,8 +313,9 @@ def reset_cache() -> None:
         shutil.rmtree(cache_dir)
 
     comets_dir = cache_dir / "comets"
+    maps_dir = cache_dir / "maps"
     assets_dir = cache_dir / "assets"
-    for folder in [cache_dir, comets_dir, assets_dir]:
+    for folder in [cache_dir, comets_dir, maps_dir, assets_dir]:
         folder.mkdir()
 
     picomet_file = cache_dir / "picomet.json"

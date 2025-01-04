@@ -1,27 +1,27 @@
-<Import.X @="components/A" />
+<Import.To @="components/A" />
 
 <nav class="bg-gray-100 text-gray-600 body-font">
   <div
     class="container px-2 mx-auto flex flex-wrap py-5 flex-col md:flex-row items-center"
   >
-    <X
+    <To
       href="/"
       class="hover:text-blue-700 mb-4 md:mb-0"
       x-bind:class="{'text-blue-600': path == '/'}"
     >
       <span>Home</span>
-    </X>
+    </To>
     <div
       class="md:ml-auto flex flex-wrap items-center text-base justify-center gap-4"
     >
-      <X
+      <To
         href="/new"
         class="hover:text-blue-700"
         x-bind:class="{'text-blue-600': path == '/new'}"
         title="New"
       >
         <Include @="icons/Add" />
-      </X>
+      </To>
       <div
         class="relative"
         x-data="{show:false}"
@@ -41,27 +41,27 @@
           x-cloak
         >
           <Fragment s-if="user.is_authenticated">
-            <X
+            <To
               href="/profile"
               class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="show=false;"
             >
               @{{user.username}}
-            </X>
-            <X
+            </To>
+            <To
               href="/bookmarks"
               class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="show=false;"
             >
               Bookmarks
-            </X>
-            <X
+            </To>
+            <To
               href="/settings/profile"
               class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="show=false;"
             >
               Settings
-            </X>
+            </To>
             <button
               class="py-2 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
               @click="call('core.logout', {});show=false;"
