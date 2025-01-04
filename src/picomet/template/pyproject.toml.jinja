@@ -10,18 +10,18 @@ default-groups = ["base"]
 base = [
   "Django=={{ DJANGO_VERSION }}"{% if Tailwind %},
   "javascript==1!1.1.3"{% endif %}{% if DB=="Mysql" %},
-  "mysqlclient==2.2.4"
+  "mysqlclient==2.2.6"
   {% endif %},
   "picomet=={{ PICOMET_VERSION }}"{% if DB=="Postgresql" %},
-  "psycopg2-binary==2.9.9"{% endif %}{% if ASSR %},
+  "psycopg2-binary==2.9.10"{% endif %}{% if ASSR %},
   "py-mini-racer==0.6.0"{% endif %},
   "python-decouple==3.8"
 ]
 dev = [
-  "channels==4.0.0",
+  "channels==4.2.0",
   "daphne==4.1.2"{% if Precommit %},
   "pre-commit==4.0.1"{% endif %}{% if Ruff %},
-  "ruff==0.8.0"{% endif %},
+  "ruff==0.8.5"{% endif %},
   "watchdog==4.0.0"
 ]{% if Ruff %}
 
