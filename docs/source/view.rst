@@ -69,6 +69,7 @@ class ``picomet.http.PicometResponseRedirect``
 
   # apps/core/views.py
   from django.contrib.auth.forms import UserCreationForm
+  from picomet.decorators import template
   from picomet.http import PicometResponseRedirect
 
   from core.models import Blog
