@@ -104,14 +104,14 @@ Targets
 s-group
 ~~~~~~~
 
-Picomet uses the ``s-group`` attribute to partially render specific parts of a page on the server.
+Picomet uses the ``s-group`` attribute to partially render multiple elements on a page with the same group name.
 
 See how to use ``s-group`` in the :doc:`/action` guide.
 
 s-param
 ~~~~~~~
 
-When you navigate from ``/&bookmarksPage=1`` to ``/&bookmarksPage=2``, Picomet partially renders elements with ``s-param="bookmarksPage"`` attribute in that page.
+When you navigate from ``/&bookmarksPage=1`` to ``/&bookmarksPage=2``, Picomet will partially render elements with ``s-param="bookmarksPage"`` attribute in that page.
 
 
 Navigation
@@ -499,9 +499,9 @@ Loop
     No blogs found
   </div>
 
-Since django ORM querysets are lazy, we can fetch a single item from the database and render it on server then update it on client.
+Since django ORM querysets are lazy, we can also fetch a single object from the database and partially render a list item.
 
-To partially update a single item or something in that item, picomet requires ``s-of``, ``s-key`` and ``s-keys`` attributes.
+To partially update any element in a list item, picomet requires ``s-of``, ``s-key`` and ``s-keys`` attributes.
 
 See how to use ``s-of``, ``s-key`` and ``s-keys`` in the :doc:`/action` guide.
 
@@ -558,6 +558,8 @@ Contents inside the ``Pro`` tag will only be parsed when ``Debug=False`` in ``se
 Tailwind
 --------
 
+Currently, picomet supports tailwindcss v3.
+
 .. code-block:: text
   :emphasize-lines: 6
 
@@ -581,7 +583,7 @@ Tailwind
   ``Tailwind`` requires `tailwindcss <https://npmjs.com/package/tailwindcss>`_ and `javascript <https://pypi.org/project/javascript/>`_. Run ``npm i tailwindcss`` and ``uv add javascript``
 
 .. note::
-  To minify the css on production, just do ``npm i cssnano``
+  To minify the css bundle on production, just do ``npm i cssnano``
 
 For tailwind to work, picomet requires 3 files.
 
