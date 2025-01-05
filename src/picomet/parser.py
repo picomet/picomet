@@ -265,10 +265,12 @@ class CometParser:
         tag = node.tag
         attrs = node.attrs
         attributes: AstAttrs
-        if (tag == "Debug") and not DEBUG:
-            return
-        elif (tag == "Pro") and DEBUG:
-            return
+        if tag == "Debug":
+            if DEBUG:
+                self.handle_children(node.children)
+        elif tag == "Pro":
+            if not DEBUG:
+                self.handle_children(node.children)
         elif (
             tag == "Layout"
             and self.current is self.ast
