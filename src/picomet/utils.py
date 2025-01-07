@@ -8,11 +8,13 @@ from picomet.types import (
     AstAttrs,
     AstAttrsDynamic,
     AstElWithAttrs,
-    DoubleQuoteEscapedStr,
     Span,
     StrCode,
     Undefined,
     UndefinedType,
+)
+from picomet.types import (
+    DoubleQuoteEscapedStr as DQES,
 )
 
 
@@ -26,8 +28,8 @@ def has_atrb(attrs: AstAttrs | AstAttrsDynamic, names: list[str]) -> bool:
 def get_atrb(
     obj: AstElWithAttrs | AstAttrs,
     name: str,
-    default: DoubleQuoteEscapedStr | UndefinedType = Undefined,
-) -> DoubleQuoteEscapedStr | StrCode | None | UndefinedType:
+    default: DQES | UndefinedType = Undefined,
+) -> DQES | StrCode | None | UndefinedType:
     attrs: AstAttrs
     if isinstance(obj, dict):
         attrs = obj["attrs"]
@@ -42,7 +44,7 @@ def get_atrb(
 def set_atrb(
     attrs: list[tuple[str, Any]],
     name: str,
-    value: DoubleQuoteEscapedStr | CodeType | None,
+    value: DQES | CodeType | None,
 ) -> None:
     for index, attr in enumerate(attrs):
         if attr[0] == name:
@@ -73,9 +75,9 @@ def mdhash(string: str, length: int) -> str:
     return md5(string.encode()).hexdigest()[:length]
 
 
-def escape_double_quote(s: str) -> DoubleQuoteEscapedStr:
+def escape_double_quote(s: str) -> DQES:
     """
     Replace double quote (") characters to HTML-safe sequence.
     """
     s = s.replace('"', "&quot;")
-    return DoubleQuoteEscapedStr(s)
+    return DQES(s)

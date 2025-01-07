@@ -32,7 +32,6 @@ from picomet.types import (
     AstAttrs,
     AstElement,
     AstMap,
-    DoubleQuoteEscapedStr,
     ElementDoubleTag,
     ElementSingleTag,
     PureAttrs,
@@ -42,6 +41,7 @@ from picomet.types import (
     isNodeElement,
     isNodeWithChildren,
 )
+from picomet.types import DoubleQuoteEscapedStr as DQES
 from picomet.utils import escape_double_quote as edq
 from picomet.utils import get_atrb, get_span, mdhash
 
@@ -167,6 +167,13 @@ def load_comet(path: str, folder: Path) -> None:
                     return StrCode(_dict["string"], _dict["filename"])
                 elif _dict.get("DTL"):
                     return django_engine.from_string(_dict["string"])
+                elif _dict.get("tag"):
+                    for attr in _dict["attrs"]:
+                        k, v, span = attr
+                        if isinstance(v, str):
+                            attr[1] = DQES(v)
+                        elif isinstance(v, dict):
+                            attr[1] = StrCode(v["string"], v["filename"])
                 return _dict
 
             ast = loads(f.read(), object_hook=ast_decoder)
@@ -434,7 +441,7 @@ class CometParser:
                     if not asset_cache.get(asset):
                         compile_asset(asset)
                     attributes = self.convert_attrs(attrs)
-                    self.set_atrb(attributes, "@", DoubleQuoteEscapedStr(asset))
+                    self.set_atrb(attributes, "@", DQES(asset))
                     self.current["children"].append(
                         {
                             "tag": tag,
@@ -508,7 +515,7 @@ class CometParser:
             )
         return attributes
 
-    def convert_value(self, value: str | None) -> DoubleQuoteEscapedStr | None:
+    def convert_value(self, value: str | None) -> DQES | None:
         if value is None:
             return None
         return edq(value)
@@ -517,7 +524,7 @@ class CometParser:
         self,
         attrs: AstAttrs,
         name: str,
-        value: DoubleQuoteEscapedStr | StrCode | None,
+        value: DQES | StrCode | None,
     ) -> None:
         for index, attr in enumerate(attrs):
             if attr[0] == name:
@@ -570,9 +577,7 @@ class CometParser:
                     )
                 )
             elif k == "server" or k == "client":
-                attributes.append(
-                    AstAttr("mode", DoubleQuoteEscapedStr(k), get_span(attr))
-                )
+                attributes.append(AstAttr("mode", DQES(k), get_span(attr)))
             else:
                 attributes.append(AstAttr(k, self.convert_value(v), get_span(attr)))
 
@@ -595,7 +600,7 @@ class CometParser:
                 _props.append(attr)
         return _props
 
-    def compile(self, v: str | DoubleQuoteEscapedStr) -> StrCode:
+    def compile(self, v: str | DQES) -> StrCode:
         return StrCode(v, self.path)
 
     def withs(self, attrs: list[AttrNode]) -> AstAttrs:
@@ -887,7 +892,7 @@ def compile_tailwind(layout: str) -> None:
     save_asset_cache()
 
 
-def find_in_comets(name: str | DoubleQuoteEscapedStr) -> str | None:
+def find_in_comets(name: str | DQES) -> str | None:
     comet_dirs = list(
         chain.from_iterable(
             [
@@ -899,7 +904,7 @@ def find_in_comets(name: str | DoubleQuoteEscapedStr) -> str | None:
     return find_in_dirs(name, comet_dirs)
 
 
-def find_in_assets(name: str | DoubleQuoteEscapedStr) -> str | None:
+def find_in_assets(name: str | DQES) -> str | None:
     asset_dirs = [
         *[str(d) for d in ASSETFILES_DIRS],
         *[os.path.join(app.path, "assets") for app in apps.get_app_configs()],

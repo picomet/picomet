@@ -23,7 +23,6 @@ from picomet.types import (
     AstElWithAttrs,
     AstMap,
     AstNode,
-    DoubleQuoteEscapedStr,
     ElementDoubleTag,
     EscapedAttrs,
     Loops,
@@ -31,6 +30,9 @@ from picomet.types import (
     StrStore,
     isNodeElement,
     isNodeWithChildren,
+)
+from picomet.types import (
+    DoubleQuoteEscapedStr as DQES,
 )
 from picomet.utils import escape_double_quote as edq
 from picomet.utils import get_atrb, has_atrb, remove_atrb, set_atrb
@@ -115,7 +117,7 @@ class Transformer:
         self.ast: Ast = ast
         self.map: AstMap = map
         self.context: dict[str, Any] = context
-        self.ctx = None
+        self.ctx: MiniRacer | None = None
         self.targets: list[str] = targets
         self.keys: Loops = keys
         self.content: EscAst = {
@@ -293,14 +295,14 @@ class Transformer:
         attrs = AstAttrsDynamic(node["attrs"], kwargs["propAttrs"])
         eattrs: EscapedAttrs = []
 
-        text = None
+        text: str | None = None
         sfor = None
         mark = (node.get("file") and not node.get("isBase")) if DEBUG else False
         mark_attrs: EscapedAttrs = []
 
         store: dict[str, Any] = {}
         reset: list[str] = []
-        rtrn = True
+        rtrn: bool = True
 
         if tag not in ["With", "Default"]:
             condition = self.handle_conditionals(node, prevRtrn)
@@ -315,8 +317,8 @@ class Transformer:
             for attr in attrs:
                 k, v, span = attr
                 if not k.startswith("x-") and not k.startswith("s-") and k != "mode":
-                    if isinstance(v, str):
-                        eattrs.append((k, DoubleQuoteEscapedStr(v)))
+                    if isinstance(v, DQES):
+                        eattrs.append((k, v))
                     elif v is None:
                         eattrs.append((k, v))
 
@@ -336,23 +338,23 @@ class Transformer:
                     if isinstance(v, StrCode):
                         value = dumps(eval(v.code, self.context))
                         eattrs.append((k, edq(value)))
-                elif k == "x-data" and isinstance(v, str | type(None)):
+                elif k == "x-data" and isinstance(v, str):
                     eattrs.append((k, v))
                     self.handle_xdata(v, mode)
-                elif k == "x-show" and isinstance(v, str | type(None)):
+                elif k == "x-show" and isinstance(v, str):
                     eattrs.append((k, v))
                     if mode == "server" and self.ctx and not self.ctx.eval(v):
-                        style = get_atrb(eattrs, "style", default="")
-                        styles = style.split(";") if style else []
+                        style = self.get_atrb(eattrs, "style", default=DQES(""))
+                        styles = style.split(";") if isinstance(style, DQES) else []
                         styles.append("display:none!important")
-                        set_atrb(eattrs, "style", ";".join(styles))
+                        set_atrb(eattrs, "style", DQES(";".join(styles)))
                 elif k == "s-text":
                     if isinstance(v, StrCode):
                         text = escape(eval(v.code, self.context), quote=False)
-                elif k == "x-text" and isinstance(v, str | type(None)):
+                elif k == "x-text" and isinstance(v, str):
                     eattrs.append((k, v))
                     if mode == "server" and self.ctx:
-                        text = escape(self.ctx.eval(v), quote=False)
+                        text = escape(str(self.ctx.eval(v)), quote=False)
                 elif k.startswith("s-bind:"):
                     if isinstance(v, StrCode) and k.split(":")[1] == "class":
                         set_atrb(
@@ -364,7 +366,7 @@ class Transformer:
                                     self.get_atrb(
                                         eattrs,
                                         "class",
-                                        default=DoubleQuoteEscapedStr(""),
+                                        default=DQES(""),
                                     ),
                                 ),
                                 [str(eval(v.code, self.context))],
@@ -385,7 +387,7 @@ class Transformer:
                         val = eval(v.code, self.context)
                         if val is True:
                             eattrs.append((":".join(k.split(":")[1:]), None))
-                elif k.startswith("x-bind:") and isinstance(v, str | type(None)):
+                elif k.startswith("x-bind:") and isinstance(v, str):
                     eattrs.append((k, v))
                     if mode == "server" and self.ctx:
                         if k.split(":")[1] == "class":
@@ -393,14 +395,22 @@ class Transformer:
                                 self.ctx.eval(
                                     f"var classes = {v}; var klasses = []; for (let k in classes) {{ if (classes[k]) {{klasses.push(k)}} }};"
                                 )
-                                set_atrb(
-                                    eattrs,
-                                    "class",
-                                    self.add_classes(
-                                        get_atrb(eattrs, "class", default=""),
-                                        loads(self.ctx.eval("JSON.stringify(klasses)")),
-                                    ),
-                                )
+                                clas = self.get_atrb(eattrs, "class", default=DQES(""))
+                                if isinstance(clas, str):
+                                    set_atrb(
+                                        eattrs,
+                                        "class",
+                                        self.add_classes(
+                                            clas,
+                                            loads(
+                                                str(
+                                                    self.ctx.eval(
+                                                        "JSON.stringify(klasses)"
+                                                    )
+                                                )
+                                            ),
+                                        ),
+                                    )
                             else:
                                 set_atrb(
                                     eattrs,
@@ -432,7 +442,7 @@ class Transformer:
 
         if tag == "html" and self.ctx:
             self.ctx.eval("var isServer = true;")
-            eattrs.append(("x-data", "{isServer: false, keys: []}"))
+            eattrs.append(("x-data", DQES("{isServer: false, keys: []}")))
         elif tag == "Outlet":
             mark = True
             layout = get_atrb(node, "layout")
@@ -534,7 +544,7 @@ class Transformer:
                 {
                     "tag": "link",
                     "attrs": [
-                        ("rel", DoubleQuoteEscapedStr("stylesheet")),
+                        ("rel", DQES("stylesheet")),
                         ("href", edq(f"{STATIC_URL}{fname}")),
                         ("data-tailwind-id", edq(fname.split(".")[0])),
                     ],
@@ -662,8 +672,8 @@ class Transformer:
         self,
         attrs: EscapedAttrs,
         name: str,
-        default: DoubleQuoteEscapedStr | bool = False,
-    ) -> DoubleQuoteEscapedStr | None | bool:
+        default: DQES | bool = False,
+    ) -> DQES | None | bool:
         for attr in attrs:
             if attr[0] == name:
                 return attr[1]
@@ -782,7 +792,7 @@ class Transformer:
         for k in store:
             self.context[k] = store[k]
 
-    def add_classes(self, string: str, classes: list[str]) -> DoubleQuoteEscapedStr:
+    def add_classes(self, string: str, classes: list[str]) -> DQES:
         klasses = string.strip().split(" ")
         for klass in classes:
             if klass and klass not in klasses:
