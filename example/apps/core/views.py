@@ -107,8 +107,8 @@ def user(request: HttpRequest, username):
 @template("Bookmarks")
 def bookmarks(request: HttpRequest):
     context = {
-        "bookmarks": Bookmark.objects.filter(user=request.user).prefetch_related(
-            "blog__like_set", "blog__comment_set"
-        )
+        "bookmarks": Bookmark.objects.filter(user=request.user)
+        .prefetch_related("blog__like_set", "blog__comment_set")
+        .order_by("-created_at")
     }
     return render(request, context)
