@@ -104,7 +104,7 @@ Create a Template and ``call`` the action from the client:
       <p>{$ blog.content $}</p>
       <span s-group="likes">likes ({$ blog.like_set.count() $})</span>
       <button
-        s-bind:x-prop:blogId="blog.id"
+        x-prop:blogId="blog.id"
         x-on:click="call('core.like_blog', {blog: blogId}, keys)"
         s-csrf
       >

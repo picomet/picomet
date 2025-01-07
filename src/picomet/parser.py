@@ -535,6 +535,7 @@ class CometParser:
                 or k.startswith("s-prop:")
                 or k.startswith("s-bind:")
                 or k.startswith("s-toggle:")
+                or k.startswith("x-prop:")
             ) and v is not None:
                 attributes += [AstAttr(k, self.compile(v), get_span(attr))]
             elif k.startswith("s-asset:") and v is not None:

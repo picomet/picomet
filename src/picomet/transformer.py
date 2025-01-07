@@ -332,6 +332,10 @@ class Transformer:
                     self.handle_scontext(v, store, reset)
                 elif k.startswith("s-prop:"):
                     self.handle_sprop(k, v, eattrs, mode)
+                elif k.startswith("x-prop:"):
+                    if isinstance(v, StrCode):
+                        value = dumps(eval(v.code, self.context))
+                        eattrs.append((k, edq(value)))
                 elif k == "x-data" and isinstance(v, str | type(None)):
                     eattrs.append((k, v))
                     self.handle_xdata(v, mode)
