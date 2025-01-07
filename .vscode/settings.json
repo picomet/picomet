@@ -11,6 +11,7 @@
     }
   },
   "mypy-type-checker.args": ["--enable-incomplete-feature=NewGenericSyntax"],
+  "mypy-type-checker.ignorePatterns": ["**/env/**/*.py", "**/example/**/*.py"],
   "tailwindCSS.experimental.configFile": "example/comets/base.tailwind.js",
   "prettier.configPath": "./.prettierrc.json",
   "[html][css][scss][javascript][typescript][json][jsonc][markdown][yaml][toml]": {
