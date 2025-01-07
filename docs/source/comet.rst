@@ -690,7 +690,7 @@ The cool thing about picomet is it's ability to render some Alpine.js directives
   Alpine.js directives supported on the server are ``x-data``, ``x-show``, ``x-text``, ``x-bind``. Learn more about these on `alpinejs.dev <https://alpinejs.dev>`_
 
 .. important::
-  To render Alpinejs syntax on the server Picomet requires `py-mini-racer <https://pypi.org/project/py-mini-racer>`_. Run ``uv add py-mini-racer``
+  To render Alpinejs syntax on the server Picomet requires `mini-racer <https://pypi.org/project/mini-racer>`_. Run ``uv add mini-racer``
 
 s-prop
 ~~~~~~
