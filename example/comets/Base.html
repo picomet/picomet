@@ -18,16 +18,10 @@
     </Debug>
   </head>
   <body
-    s-prop:_path="request.path"
-    s-prop:_v="request.GET.get('v', '')"
-    x-data="{path: _path, v: _v}"
+    x-data="{path: $S(`request.path`), v: $S(`request.GET.get('v', '')`)}"
     x-init="navigation.addEventListener('navigate', () => {
       setTimeout(() => {
         $data.v = new URLSearchParams(location.search).get('v');
-      }, 0);
-    });
-    navigation.addEventListener('navigate', () => {
-      setTimeout(() => {
         $data.path = location.pathname;
       }, 0);
     })"

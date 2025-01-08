@@ -2,9 +2,7 @@
   <button
     s-group="bookmark,auth"
     class="p-1 hover:bg-gray-200 active:bg-gray-300"
-    x-prop:bookmarked="bookmarked"
-    x-prop:blog_id="blog.id"
-    @click="call(bookmarked ? 'core.unbookmark' : 'core.bookmark', {blog: blog_id}, keys)"
+    @click="call($X(`bookmarked`) ? 'core.unbookmark' : 'core.bookmark', {blog: $X(`blog.id`)}, keys)"
     s-bind:aria-label="'Unbookmark' if bookmarked else 'Bookmark'"
     s-csrf
   >

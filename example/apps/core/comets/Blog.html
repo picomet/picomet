@@ -38,8 +38,7 @@
         >
           <button
             class="py-1 px-6 rounded-md hover:bg-gray-200 active:bg-gray-300"
-            x-prop:blog_slug="blog.slug"
-            @click="call('core.delete_blog', {blog: blog_slug})"
+            @click="call('core.delete_blog', {blog: $X(`blog.slug`)})"
             s-csrf
           >
             Delete
@@ -74,9 +73,7 @@
           <button
             s-group="auth"
             class="p-1 hover:bg-gray-200 active:bg-gray-300"
-            x-prop:liked="liked"
-            x-prop:blog_id="blog.id"
-            @click="call(liked ? 'core.dislike' : 'core.like', {blog: blog_id})"
+            @click="call($X(`liked`) ? 'core.dislike' : 'core.like', {blog: $X(`blog.id`)})"
             s-csrf
           >
             <svg
@@ -117,9 +114,7 @@
           <button
             s-group="auth"
             class="p-1 hover:bg-gray-200 active:bg-gray-300"
-            x-prop:bookmarked="bookmarked"
-            x-prop:blog_id="blog.id"
-            @click="call(bookmarked ? 'core.unbookmark' : 'core.bookmark', {blog: blog_id})"
+            @click="call($X(`bookmarked`) ? 'core.unbookmark' : 'core.bookmark', {blog: $X(`blog.id`)})"
             s-csrf
           >
             <svg
@@ -152,9 +147,8 @@
     </div>
     <div>
       <form
-        x-prop:blog_id="blog.id"
         x-data="{comment: ''}"
-        @submit.prevent="call('core.comment',{blog: blog_id, text: comment});comment='';"
+        @submit.prevent="call('core.comment',{blog: $X(`blog.id`), text: comment});comment='';"
         class="mt-2 flex"
         client
       >
@@ -190,8 +184,7 @@
               s-show="comment.user == user"
               s-group="auth"
               class="ms-auto p-1 rounded-md hover:bg-gray-200 active:bg-gray-300"
-              x-prop:comment_id="comment.id"
-              @click="call('core.delete_comment', {comment: comment_id})"
+              @click="call('core.delete_comment', {comment: $X(`comment.id`)})"
               s-csrf
             >
               <svg

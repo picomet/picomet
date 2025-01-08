@@ -578,6 +578,24 @@ class CometParser:
                 )
             elif k == "server" or k == "client":
                 attributes.append(AstAttr("mode", DQES(k), get_span(attr)))
+            elif (k.startswith("x-") or k.startswith("@")) and isinstance(v, str):
+                sprop = r"\$S\(`([^`]+)`\)"
+                for match in re.finditer(sprop, v):
+                    expression = match.group(1)
+                    name = re.sub(r"[^\w\d_]", "_", expression).lower()
+                    attributes.append(
+                        AstAttr(f"s-prop:{name}", self.compile(expression), None)
+                    )
+                    v = v.replace(match.group(0), name)
+                xprop = r"\$X\(`([^`]+)`\)"
+                for match in re.finditer(xprop, v):
+                    expression = match.group(1)
+                    name = re.sub(r"[^\w\d_]", "_", expression).lower()
+                    attributes.append(
+                        AstAttr(f"x-prop:{name}", self.compile(expression), None)
+                    )
+                    v = v.replace(match.group(0), name)
+                attributes.append(AstAttr(k, self.convert_value(v), get_span(attr)))
             else:
                 attributes.append(AstAttr(k, self.convert_value(v), get_span(attr)))
 
