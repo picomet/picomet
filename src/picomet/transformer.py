@@ -735,7 +735,7 @@ class Transformer:
         **kwargs: Unpack[SforKwargs],
     ) -> bool | None:
         sfor = cast(str, get_atrb(node, "s-for"))
-        skey = cast(StrCode, get_atrb(node, "s-key"))
+        skey = get_atrb(node, "s-key")
         array: list[Any] = []
         for key in self.keys:
             if loc == key[0]:
@@ -755,7 +755,7 @@ class Transformer:
             self.context[sfor] = item
             self.context["index"] = index
             _loops = deepcopy(loops)
-            if skey:
+            if isinstance(skey, StrCode):
                 _skey = int(eval(skey.code, self.context))
                 _loc = f"{loc}:[{_skey}]"
                 _loops = [*_loops, (copy(loc), _skey)]
