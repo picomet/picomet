@@ -420,13 +420,20 @@ class CometParser:
                 attributes = self.process_attrs(attrs)
                 if self.get_atrb(attrs, "@") is Undefined:
                     attributes = [AstAttr("@", edq(component), None)] + attributes
+                elFragment: ElementDoubleTag = {
+                    "tag": "Fragment",
+                    "attrs": [],
+                    "children": [],
+                    "parent": self.current,
+                }
                 elInclude = {
                     "tag": "Include",
                     "attrs": self.process_props(attributes),
-                    "parent": self.current,
+                    "parent": elFragment,
                     "span": get_span(node),
                 }
-                self.current["children"].append(elInclude)
+                elFragment["children"].append(elInclude)
+                self.current["children"].append(elFragment)
         elif tag == "Group":
             self.current["children"].append(
                 {
