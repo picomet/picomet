@@ -33,6 +33,7 @@
       @submit.prevent="submitLogin($el, $data)"
       class="mt-2 flex flex-col items-end gap-3"
     >
+      {% csrf_token %}
       <input
         type="text"
         autocomplete="username"
