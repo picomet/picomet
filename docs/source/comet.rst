@@ -686,16 +686,18 @@ Alpinejs SSR
 
 The cool thing about picomet is it's ability to render some Alpine.js directives on the server.
 
+Although you can build simple SPA websites without any Alpinejs server side rendering, but if you want to build a SPA website with interactive and complex client side logics, then you might need to use Alpinejs SSR. The client will be able to update ui after the initial server render.
+
 .. note::
   Alpine.js directives supported on the server are ``x-data``, ``x-show``, ``x-text``, ``x-bind``. Learn more about these on `alpinejs.dev <https://alpinejs.dev>`_
 
 .. important::
   To render Alpinejs syntax on the server Picomet requires `mini-racer <https://pypi.org/project/mini-racer>`_. Run ``uv add mini-racer``
 
-s-prop
-~~~~~~
+$S
+~~~
 
-To pass any data from the server context dictionary to the javascript context, use the s-prop directive.
+To access any data from the python context dictionary to the server javascript context, use the ``$S`` function.
 
 .. code-block:: python
 
@@ -711,7 +713,7 @@ To pass any data from the server context dictionary to the javascript context, u
 .. code-block:: html
 
   <!-- apps/core/comets/Page.html -->
-  <div s-prop:_var="variable" x-data="{var: _var}" server>
+  <div x-data="{var: $S(`variable`)}" server>
     <span x-text="var"></span>
   </div>
 
@@ -741,7 +743,7 @@ Picomet provides some helpful builtins to use inside templates.
 safe
 ~~~~
 
-Mark a string as safe for use in HTML.
+Mark a string as safe for use as raw HTML.
 
 .. code-block:: html
 
