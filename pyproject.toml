@@ -1,6 +1,6 @@
 [project]
 name = "picomet"
-version = "0.0.39"
+version = "0.0.40"
 authors = [{ name = "Al Mahdi", email = "picometproject@gmail.com" }]
 license = { text = "MIT" }
 description = "The nextjs of django"
