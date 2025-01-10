@@ -129,6 +129,7 @@ class ElementDoubleTag(TypedDict):
     span: NotRequired[Span]
     parent: "ElementDoubleTag | Ast"
     file: NotRequired[str]
+    isBase: NotRequired[bool]
 
 
 class ElementSingleTag(TypedDict):
@@ -143,6 +144,7 @@ class AstMap(TypedDict):
     params: dict[str, list[list[int]]]
     layouts: dict[str, list[int]]
     files: dict[str, list[list[int]]]
+    children: list[int]
 
 
 class Ast(TypedDict):
@@ -151,7 +153,7 @@ class Ast(TypedDict):
     children: list[AstNode]
     parent: ElementDoubleTag | None
     file: NotRequired[str]
-    isBase: bool
+    isBase: NotRequired[bool]
 
 
 class AstElWithAttrs(TypedDict):

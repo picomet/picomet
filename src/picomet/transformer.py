@@ -108,13 +108,13 @@ class SforKwargs(TypedDict):
 class Transformer:
     def __init__(
         self,
-        ast: Ast,
+        ast: Ast | ElementDoubleTag,
         map: AstMap,
         context: dict[str, Any],
         targets: list[str],
         keys: Loops,
     ):
-        self.ast: Ast = ast
+        self.ast: Ast | ElementDoubleTag = ast
         self.map: AstMap = map
         self.context: dict[str, Any] = context
         self.ctx: MiniRacer | None = None
@@ -609,7 +609,7 @@ class Transformer:
         for index, child in enumerate(children):
             _depth: int = 0 if depth is None else depth + 1
             _loc: str = loc
-            if isNodeElement(child) and child["tag"] not in ["Layout"]:
+            if isNodeElement(child) and child["tag"] not in ["Layout", "Include"]:
                 _loc += f"{index}" if not _loc else f",{index}"
                 if (
                     len(self.targets)

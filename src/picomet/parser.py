@@ -205,7 +205,7 @@ x_re = re.compile(
 
 class CometParser:
     def __init__(self, source: str, path: str, use_cache: bool = True):
-        self.ast: Ast = {
+        self.ast: Ast | ElementDoubleTag = {
             "tag": "Fragment",
             "attrs": [],
             "children": [],
@@ -213,7 +213,13 @@ class CometParser:
             "file": path,
             "isBase": False,
         }
-        self.map: AstMap = {"groups": {}, "params": {}, "layouts": {}, "files": {}}
+        self.map: AstMap = {
+            "groups": {},
+            "params": {},
+            "layouts": {},
+            "files": {},
+            "children": [],
+        }
         self.imports: dict[str, str] = {}
         self.current: Ast | ElementDoubleTag = self.ast
         self.path = path
@@ -305,11 +311,10 @@ class CometParser:
                 "file": self.ast.pop("file"),
             }
             elLayout["children"].append(elPage)
-
-            self.current["children"].append(elLayout)
+            self.ast = elLayout
             self.current = elPage
             self.handle_children(node.children)
-            self.current = elLayout["parent"]
+            self.current = self.current["parent"]
         elif (
             self.imports.get(tag)
             or engines["picomet"].engine.components.get(tag)
@@ -658,7 +663,13 @@ class Mapper:
     def __init__(self, ast: Ast, path: str) -> None:
         self.ast: Ast = ast
         self.path: str = path
-        self.map: AstMap = {"groups": {}, "params": {}, "layouts": {}, "files": {}}
+        self.map: AstMap = {
+            "groups": {},
+            "params": {},
+            "layouts": {},
+            "files": {},
+            "children": [],
+        }
         self.map_node(ast)
 
         map_cache[path] = self.map
@@ -687,17 +698,16 @@ class Mapper:
                     template = loader.get_template(comet, using="picomet").template
                     parser = parse(template.source, template.origin.name)
                     self.load_map(parser.map, loc)
-                    children = self.find_loc("Children", parser.ast, [])
-                    if children:
-                        for index, child in enumerate(node["children"]):
-                            if isNodeElement(child):
-                                self.map_node(child, loc + children + [index])
+                    for index, child in enumerate(node["children"]):
+                        if isNodeElement(child):
+                            self.map_node(child, loc + parser.map["children"] + [index])
                 return
             elif tag == "Outlet":
                 layout = get_atrb(node, "layout")
                 if isinstance(layout, str):
                     self.map["layouts"].setdefault(layout, [])
                     self.map["layouts"][layout] = loc.copy()
+                self.map["children"] = loc + [0]
                 return
 
             for index, child in enumerate(node["children"]):

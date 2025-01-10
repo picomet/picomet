@@ -235,7 +235,7 @@ def compile_file(path: str) -> None:
             find_depended_layout(path)
             find_depending_layout(path)
 
-        hmr_send_message({"base" if parser.ast["isBase"] else "template": path})
+        hmr_send_message({"base" if parser.ast.get("isBase") else "template": path})
     elif (ext == ".js" or ext == ".ts") and len(dgraph.get(path, [])):
         compile_asset(path)
         hmr_send_message(
