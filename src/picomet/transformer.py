@@ -12,6 +12,7 @@ from django.template import loader
 from django.template.backends.django import Template
 from django.utils.safestring import SafeString
 
+from picomet.helpers import get_url_id
 from picomet.parser import STATIC_URL, asset_cache, parse
 from picomet.types import (
     Ast,
@@ -456,15 +457,25 @@ class Transformer:
 
         if self.c_target:
             if tag == "Css" or tag == "Sass":
-                fname, _ = asset_cache[cast(str, get_atrb(node, "@"))]
-                self.partials[self.c_target]["css"][fname.split(".")[0]] = (
-                    f"{STATIC_URL}{fname}"
-                )
+                asset_name = get_atrb(node, "@")
+                if isinstance(asset_name, str):
+                    if not asset_name.startswith("http"):
+                        fname, _ = asset_cache[asset_name]
+                        path = f"{STATIC_URL}{fname}"
+                    else:
+                        fname = get_url_id(asset_name)
+                        path = asset_name
+                    self.partials[self.c_target]["css"][fname.split(".")[0]] = path
             elif tag == "Js" or tag == "Ts":
-                fname, _ = asset_cache[cast(str, get_atrb(node, "@"))]
-                self.partials[self.c_target]["js"][fname.split(".")[0]] = (
-                    f"{STATIC_URL}{fname}"
-                )
+                asset_name = get_atrb(node, "@")
+                if isinstance(asset_name, str):
+                    if not asset_name.startswith("http"):
+                        fname, _ = asset_cache[asset_name]
+                        path = f"{STATIC_URL}{fname}"
+                    else:
+                        fname = get_url_id(asset_name)
+                        path = asset_name
+                    self.partials[self.c_target]["js"][fname.split(".")[0]] = path
             else:
                 attributes = self.join_attrs(eattrs)
                 if mark:
@@ -493,28 +504,22 @@ class Transformer:
                 if loc == self.c_target:
                     self.c_target = ""
         elif tag == "Css" or tag == "Sass":
-            fname, compiled = asset_cache[cast(str, get_atrb(node, "@"))]
-            asset_id = edq(fname.split(".")[0])
-            assets = self.groups[cast(str, get_atrb(node, "group"))]["children"]
+            asset_name = cast(DQES, get_atrb(node, "@"))
+            if asset_name.startswith("http"):
+                asset_id = edq(get_url_id(asset_name))
+                href = asset_name
+            else:
+                fname, compiled = asset_cache[asset_name]
+                asset_id = edq(fname.split(".")[0])
+                href = edq(f"{STATIC_URL}{fname}")
+            group = self.groups[cast(str, get_atrb(node, "group", DQES("head")))]
             exists = False
-            for asset in assets:
+            for asset in group["children"]:
                 if get_atrb(cast(AstElWithAttrs, asset), "data-style-id") == asset_id:
                     exists = True
             if not exists:
-                if settings.DEBUG:
-                    assets.append(
-                        {
-                            "tag": "link",
-                            "attrs": [
-                                ("rel", edq("stylesheet")),
-                                ("href", edq(f"{STATIC_URL}{fname}")),
-                                ("data-style-id", asset_id),
-                            ],
-                            "parent": self.current,
-                        }
-                    )
-                else:
-                    assets.append(
+                if not settings.DEBUG and not asset_name.startswith("http"):
+                    group["children"].append(
                         {
                             "tag": "style",
                             "attrs": [("data-style-id", asset_id)],
@@ -522,9 +527,27 @@ class Transformer:
                             "parent": self.current,
                         }
                     )
+                else:
+                    group["children"].append(
+                        {
+                            "tag": "link",
+                            "attrs": [
+                                ("rel", edq("stylesheet")),
+                                ("href", href),
+                                ("data-style-id", asset_id),
+                            ],
+                            "parent": self.current,
+                        }
+                    )
         elif tag == "Js" or tag == "Ts":
-            fname, _ = asset_cache[cast(str, get_atrb(node, "@"))]
-            asset_id = edq(fname.split(".")[0])
+            asset_name = cast(DQES, get_atrb(node, "@"))
+            if asset_name.startswith("http"):
+                asset_id = edq(get_url_id(asset_name))
+                path = asset_name
+            else:
+                fname, _ = asset_cache[asset_name]
+                asset_id = edq(fname.split(".")[0])
+                path = edq(f"{STATIC_URL}{fname}")
             remove_atrb(eattrs, "@")
             eattrs.append(("type", edq("module")))
             eattrs.append(("data-script-id", asset_id))
@@ -533,7 +556,7 @@ class Transformer:
                     "tag": "script",
                     "attrs": eattrs,
                     "children": [
-                        f'import * as module from "{STATIC_URL}{fname}"; Object.keys(module).forEach((key) => {{if(key == "cleanup"){{window["{asset_id}_cleanup"] = module[key]}} else {{window[key] = module[key]}}}});'
+                        f'import * as module from "{path}"; Object.keys(module).forEach((key) => {{if(key == "cleanup"){{window["{asset_id}_cleanup"] = module[key]}} else {{window[key] = module[key]}}}});'
                     ],
                     "parent": self.current,
                 }
@@ -562,11 +585,11 @@ class Transformer:
                 self.add_marker_start(loc, mark_attrs)
             self.current["children"].append(element)
             if tag == "Group":
-                group = get_atrb(node, "name")
-                if group != "head":
-                    group_element = cast(EscGroupElement, element)
-                    group_element["children"] = []
-                    self.groups[cast(str, group)] = group_element
+                group_name = get_atrb(node, "name")
+                if group_name != "head":
+                    group = cast(EscGroupElement, element)
+                    group["children"] = []
+                    self.groups[cast(str, group_name)] = group
             if isNodeWithChildren(node):
                 children = node["children"]
                 element = cast(EscElementDoubleTag, element)

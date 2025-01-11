@@ -1,5 +1,6 @@
 import base64
 import os
+import re
 from itertools import chain
 from pathlib import Path
 
@@ -20,6 +21,10 @@ def get_comet_id(path: str) -> str:
         return mdhash(rel, 8)
     else:
         return mdhash(path.as_posix(), 8)
+
+
+def get_url_id(url: str) -> str:
+    return re.sub(r"[^\w\d]", "", url)
 
 
 def find_comet_name(path: str) -> str | None:

@@ -239,6 +239,12 @@ Load it in a :ref:`Group <group>`
    <a>Link</a>
   </div>
 
+To use a remote css file, use the ``http`` url.
+
+.. code-block:: text
+
+  <Css @="https://example.com/styles.css" group="styles" />
+
 .. _scss:
 
 Sass
@@ -270,6 +276,8 @@ Load it in a :ref:`Group <group>`
 Js
 ~~~
 
+To load any javascript es module.
+
 .. code-block:: javascript
 
   /* apps/core/comets/Page.js or apps/core/assets/Page.js */
@@ -284,8 +292,16 @@ Js
   <Js @="Page.js" />
   <button @click="say('hello')">say hello</button>
 
+To use a remote js esm, use the ``http`` url.
+
+.. code-block:: text
+
+  <Js @="https://example.com/script.esm.js" />
+
 Ts
 ~~~
+
+To load any typescript es module..
 
 .. code-block:: typescript
 

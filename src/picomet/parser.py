@@ -447,20 +447,22 @@ class CometParser:
         elif tag == "Js" or tag == "Ts" or tag == "Css" or tag == "Sass":
             asset_name = self.get_atrb(attrs, "@")
             if isinstance(asset_name, str):
-                asset = find_in_comets(asset_name) or find_in_assets(asset_name)
-                if asset:
-                    self.add_dep(asset, self.path)
-                    if not asset_cache.get(asset):
-                        compile_asset(asset)
-                    attributes = self.convert_attrs(attrs)
-                    self.set_atrb(attributes, "@", DQES(asset))
-                    self.current["children"].append(
-                        {
-                            "tag": tag,
-                            "attrs": attributes,
-                            "parent": self.current,
-                        }
-                    )
+                attributes = self.convert_attrs(attrs)
+                if not asset_name.startswith("http"):
+                    asset = find_in_comets(asset_name) or find_in_assets(asset_name)
+                    if asset:
+                        self.add_dep(asset, self.path)
+                        if not asset_cache.get(asset):
+                            compile_asset(asset)
+                        self.set_atrb(attributes, "@", DQES(asset))
+                self.current["children"].append(
+                    {
+                        "tag": tag,
+                        "attrs": attributes,
+                        "parent": self.current,
+                        "span": get_span(node),
+                    }
+                )
         elif tag == "Tailwind":
             if self.current["tag"] == "head":
                 twlayouts[self.path] = str(self.get_atrb(attrs, "@"))
